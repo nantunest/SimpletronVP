@@ -30,6 +30,7 @@ SC_MODULE(Rom)
         if (address >= 0 && address < 0x6000)
         {
             data = memory[address];
+            std::cout << "Fetching: " << memory[address] << std::endl;
         }
     }
 
@@ -38,9 +39,12 @@ SC_MODULE(Rom)
         SC_METHOD(fetch);
         sensitive << address << data;
 
-        memory[0] = 100;
-        memory[1] = 200;
-        memory[2] = 300;
+        memory[0] = 0x20;
+        memory[1] = 0x30;
+        memory[2] = 0x10;
+        memory[3] = 0x21;
+        memory[4] = 0x30;
+        memory[5] = 0x10;
     }
 
 };
@@ -74,9 +78,9 @@ SC_MODULE(Ram)
         SC_METHOD(read_write);
         sensitive << address << data << write_enable;
 
-        memory[0] = 100;
-        memory[1] = 200;
-        memory[2] = 300;
+        memory[0] = 0x20;
+        memory[1] = 0x30;
+        memory[2] = 0x10;
     }
 
 };
@@ -89,25 +93,28 @@ SC_MODULE(Simpletron)
     sc_out<bool> ram_write_enable; // WE = 0 -> Read, WE = 1 -> Write
 
     int accumulator = 0;
-    int instruction_pointer = 0;
+    int fetch_pointer = 0;
+    bool initialized = false;
 
     int opcode;
     int operand_lo;
     int operand_hi;
 
-    enum State {FETCH_1, FETCH_2, FETCH_3, EXEC};
+    enum State {FETCH_1, FETCH_2, FETCH_3, DECODE, EXEC};
     State state = FETCH_1;
     
     enum OpCodes {LOAD = 0x20, STORE = 0x21};
 
     void load()
     {
+        std::cout << "EXECUTING LOAD" << std::endl;
 	    accumulator = data;
         ram_write_enable = false;
     }
     
     void store()
     {
+        std::cout << "EXECUTING STORE" << std::endl;
         data = accumulator;
         ram_write_enable = true;
     }
@@ -128,42 +135,58 @@ SC_MODULE(Simpletron)
     
     void run()
     {
+        
         while(true){
-            switch(state)
-            {
-                case FETCH_1:
-                    std::cout << "fetch 1 ip " << instruction_pointer << std::endl;
-                    address = instruction_pointer;
-                    opcode = data;
-                    instruction_pointer++;
-                    state = FETCH_2;
-                    std::cout << "FETCH_1 address: " << address << std::endl; 
-                    std::cout << "fetch 1 ip " << instruction_pointer << std::endl;
-                    break;
-                case FETCH_2:
-                    std::cout << "fetch 2 ip " << instruction_pointer << std::endl;
-                    address = instruction_pointer;
-                    operand_lo = data;
-                    instruction_pointer++;
-                    state = FETCH_3;
-                    std::cout << "FETCH_2 address: " << address << std::endl; 
-                    std::cout << "fetch 2 ip " << instruction_pointer << std::endl;
-                    break;
-                case FETCH_3:
-                    std::cout << "fetch 3 ip " << instruction_pointer << std::endl;
-                    address = instruction_pointer;
-                    operand_hi = data;
-                    instruction_pointer++;
-                    state = EXEC;
-                    std::cout << "FETCH_3 address: " << address << std::endl; 
-                    std::cout << "fetch 3 ip " << instruction_pointer << std::endl;
-                    break;
-                case EXEC:
-                    execute_op();
-                    state = FETCH_1;
-                    std::cout << "EXEC" << std::endl; 
+           
+            std::cout << "---------------------------------------------------------------------" << std::endl;
+            std::cout << "Iteration begin, address: " << address << std::endl;
+            std::cout << "Clock: " << clk << std::endl; 
+        
+            if (!initialized){
+                initialized = true;
+            } 
+            else {
+                switch(state)
+                {
+                    case FETCH_1:
+                        std::cout << "FETCH_1 ip signal: " << address << std::endl; 
+                        std::cout << "Data: " << std::hex << data << std::endl; 
+                        opcode = data;
+                        fetch_pointer++;
+                        address = fetch_pointer;
+                        state = FETCH_2;
+                        break;
+                    case FETCH_2:
+                        std::cout << "FETCH_2 address: " << address << std::endl; 
+                        std::cout << "Data: " << std::hex << data << std::endl; 
+                        operand_hi = data;
+                        fetch_pointer++;
+                        address = fetch_pointer;
+                        state = FETCH_3;
+                        break;
+                    case FETCH_3:
+                        std::cout << "FETCH_3 address: " << address << std::endl; 
+                        std::cout << "Data: " << std::hex << data << std::endl; 
+                        operand_lo = data;
+                        fetch_pointer++;
+                        state = DECODE;
+                        break;
+                    case DECODE:
+                        std::cout << "DECODE address: " << address << std::endl; 
+                        std::cout << "Data: " << std::hex << data << std::endl; 
 
+                        address = (operand_hi << 8) | operand_lo;
+                        state = EXEC;
+                        break;
+                    case EXEC:
+                        std::cout << "EXEC" << std::endl; 
+                        std::cout << "Data: " << std::hex << data << std::endl; 
+                        execute_op();
+                        state = FETCH_1;
+
+                }
             }
+
             std::cout << sc_time_stamp() << std::endl;
             wait();
         }
@@ -172,17 +195,19 @@ SC_MODULE(Simpletron)
     SC_CTOR(Simpletron)
     {
         SC_THREAD(run);
-        sensitive << clk.neg(); 
+        sensitive << clk.pos(); 
     }
 
 };
-
+/*
 void test_simpletron()
 {
-    sc_clock clk("clock", 10, SC_US);
+    sc_clock clk("clock", 10, SC_US, false);
     sc_signal<int> address;
     sc_signal<int> data;
     sc_signal<bool> ram_write_enable; // WE = 0 -> Read, WE = 1 -> Write
+
+    std::cout << "Address initial value: " << address << std::endl;
 
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
@@ -191,6 +216,28 @@ void test_simpletron()
     simpletron.ram_write_enable(ram_write_enable);
     
     sc_core::sc_start(100, sc_core::SC_US);
+}
+*/
+void test_simpletron_rom()
+{
+    sc_clock clk("clock", 10, SC_US, false);
+    sc_signal<int> address;
+    sc_signal<int, SC_MANY_WRITERS> data;
+    sc_signal<bool> ram_write_enable; // WE = 0 -> Read, WE = 1 -> Write
+
+    std::cout << "Address initial value: " << address << std::endl;
+
+    Simpletron simpletron("simpletron1");
+    simpletron.clk(clk);
+    simpletron.address(address);
+    simpletron.data(data);
+    simpletron.ram_write_enable(ram_write_enable);
+
+    Rom rom("rom1");
+    rom.address(address);
+    rom.data(data);
+    
+    sc_core::sc_start(120, sc_core::SC_US);
 }
 
 void test_ram()
@@ -233,10 +280,12 @@ void test_ram()
 
 int sc_main(int argc, char* argv[]) {
    
-//    test_ram();
-    test_simpletron();
+    //test_ram();
+    test_simpletron_rom();
     return 0;
 
+
+    /*
     sc_signal<int> a, b;
     sc_signal<int> sum;
 
@@ -276,4 +325,5 @@ int sc_main(int argc, char* argv[]) {
 
     
     return 0;
+    */
 }
