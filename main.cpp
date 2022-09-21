@@ -183,6 +183,7 @@ SC_MODULE(Simpletron)
                         std::cout << "Data: " << std::hex << data << std::endl; 
                         execute_op();
                         state = FETCH_1;
+                        address = fetch_pointer;
 
                 }
             }
@@ -220,12 +221,19 @@ void test_simpletron()
 */
 void test_simpletron_rom()
 {
-    sc_clock clk("clock", 10, SC_US, false);
+    sc_clock clk("clock", 10, sc_core::SC_US, 0.5, 10, sc_core::SC_US);
     sc_signal<int> address;
     sc_signal<int, SC_MANY_WRITERS> data;
     sc_signal<bool> ram_write_enable; // WE = 0 -> Read, WE = 1 -> Write
+    
+    // Open VCD file
+    sc_trace_file *wf = sc_create_vcd_trace_file("simpletron");
 
-    std::cout << "Address initial value: " << address << std::endl;
+    // Dump the desired signals
+    sc_trace(wf, clk, "clock");
+    sc_trace(wf, address, "address");
+    sc_trace(wf, data, "data");
+    sc_trace(wf, ram_write_enable, "ram_we");
 
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
@@ -238,6 +246,8 @@ void test_simpletron_rom()
     rom.data(data);
     
     sc_core::sc_start(120, sc_core::SC_US);
+
+    sc_close_vcd_trace_file(wf);
 }
 
 void test_ram()
