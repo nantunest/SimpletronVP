@@ -30,7 +30,7 @@ SC_MODULE(Rom)
         if (address >= 0 && address < 0x6000)
         {
             data = memory[address];
-            std::cout << "Fetching: " << memory[address] << std::endl;
+            std::cout << "Fetching: " << std::hex << memory[address] << std::endl;
         }
     }
 
@@ -43,8 +43,12 @@ SC_MODULE(Rom)
         memory[1] = 0x30;
         memory[2] = 0x10;
         memory[3] = 0x21;
-        memory[4] = 0x30;
+        memory[4] = 0x60;
         memory[5] = 0x10;
+	memory[6] = 0x20;
+        memory[7] = 0x60;
+        memory[8] = 0x10;
+	memory[12304] = 0x11; //incluido por Gabriel
     }
 
 };
@@ -108,7 +112,8 @@ SC_MODULE(Simpletron)
     void load()
     {
         std::cout << "EXECUTING LOAD" << std::endl;
-	    accumulator = data;
+	accumulator = data;
+	std::cout << "Accumulator: " << std::hex << accumulator << std::endl; //incluido por Gabriel
         ram_write_enable = false;
     }
     
@@ -116,6 +121,8 @@ SC_MODULE(Simpletron)
     {
         std::cout << "EXECUTING STORE" << std::endl;
         data = accumulator;
+	std::cout << "Accumulator: " << std::hex << accumulator << std::endl; //incluido por Gabriel
+	std::cout << "Data: " << std::hex << data << std::endl; //incluido por Gabriel
         ram_write_enable = true;
     }
 
@@ -176,6 +183,7 @@ SC_MODULE(Simpletron)
                         std::cout << "Data: " << std::hex << data << std::endl; 
 
                         address = (operand_hi << 8) | operand_lo;
+			data = accumulator; //incluído por Gabriel
                         state = EXEC;
                         break;
                     case EXEC:
@@ -183,6 +191,7 @@ SC_MODULE(Simpletron)
                         std::cout << "Data: " << std::hex << data << std::endl; 
                         execute_op();
                         state = FETCH_1;
+			address = fetch_pointer; //incluído por Gabriel
 
                 }
             }
@@ -237,7 +246,7 @@ void test_simpletron_rom()
     rom.address(address);
     rom.data(data);
     
-    sc_core::sc_start(120, sc_core::SC_US);
+    sc_core::sc_start(150, sc_core::SC_US);
 }
 
 void test_ram()
