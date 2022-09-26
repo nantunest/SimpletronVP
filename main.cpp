@@ -39,17 +39,35 @@ SC_MODULE(Rom)
         SC_METHOD(fetch);
         sensitive << address;
 
-        memory[0] = 0x20;
+        /* READ 0x6000 */
+        memory[0] = 0x10;
         memory[1] = 0x60;
-        memory[2] = 0x02;
+        memory[2] = 0x00;
 
-        memory[3] = 0x21;
+        /* WRITE 0x6000 */
+        memory[3] = 0x11;
         memory[4] = 0x60;
         memory[5] = 0x00;
 
+        /* LOAD 0x6002 */
         memory[6] = 0x20;
         memory[7] = 0x60;
-        memory[8] = 0x01;
+        memory[8] = 0x00;
+
+        /* ADD 0x3000 */
+        memory[9] = 0x30;
+        memory[10] = 0x30;
+        memory[11] = 0x00;
+
+        /* STORE 0x6000 */
+        memory[12] = 0x21;
+        memory[13] = 0x60;
+        memory[14] = 0x00;
+
+        /* BRANCH 0x0000 */
+        memory[15] = 0x40;
+        memory[16] = 0x00;
+        memory[17] = 0x00;
 
         memory[0x3000] = 0x40;
         memory[0x3001] = 0x50;
@@ -102,19 +120,33 @@ SC_MODULE(Simpletron)
     sc_out<int> address;
     sc_inout<int> data;
     sc_out<bool> ram_write_enable; // WE = 0 -> Read, WE = 1 -> Write
+    sc_out<int> acc_debug;
 
     int accumulator = 0;
     int fetch_pointer = 0;
     bool initialized = false;
+    bool executing = true;
 
     int opcode;
     int operand_lo;
     int operand_hi;
 
-    enum State {FETCH_1, FETCH_2, FETCH_3, DECODE, EXEC, NEXT_OP};
+    enum State {FETCH_1, FETCH_2, DECODE, EXEC, NEXT_OP};
     State state = FETCH_1;
     
-    enum OpCodes {LOAD = 0x20, STORE = 0x21};
+    enum OpCodes {READ = 0x10,
+                  WRITE = 0x11,
+                  LOAD = 0x20,
+                  STORE = 0x21,
+                  ADD = 0x30,
+                  SUB = 0x31,
+                  DIV = 0x32,
+                  MUL = 0x33,
+                  BRANCH = 0x40,
+                  BRANCHNEG = 0x41,
+                  BRANCHZERO = 0x42,
+                  HALT = 0x43
+                 };
 
     void load()
     {
@@ -133,17 +165,119 @@ SC_MODULE(Simpletron)
         std::cout << "Accumulator: " << std::hex << accumulator << std::endl;
         ram_write_enable = true;
     }
+    void halt()
+    {
+        executing = false; 
+    }
+
+
+    void add()
+    {
+        accumulator += data; 
+    }
+
+
+    void sub()
+    {
+        accumulator -= data;
+    }
+
+
+    void div()
+    {
+        if (data != 0){
+            accumulator /= data;
+        } else {
+            std::cout << "Error: Division by zero"; 
+            halt();
+        }
+    }
+
+
+    void mul()
+    {
+        accumulator *= data;
+    }
+
+    void branch()
+    {
+        fetch_pointer = address; 
+    }
+
+
+    void branchneg()
+    {
+        if (accumulator < 0) {
+            fetch_pointer = address;
+        }
+    }
+
+
+    void branchzero()
+    {
+        if (accumulator == 0) {
+            fetch_pointer = address;
+        }
+    }
+
+    void write()
+    {
+        std::cout << "CONSOLE: " << std::hex << data << std::endl;
+    }
+
+
+    void read()
+    { 
+        int read_data;
+        std::cin >> read_data;
+
+        data = read_data;
+        ram_write_enable = true;
+    }
+
+
 
     void execute_op()
     {
         switch(opcode)
         {
+            case READ:
+                read();
+                break;
+            case WRITE:
+                write();
+                break;
             case LOAD:
                 load();
                 break;
             case STORE:
                 store();
                 break;
+            case ADD:
+                add();
+                break;
+            case SUB:
+                sub();
+                break;
+            case DIV: 
+                div();
+                break;
+            case MUL: 
+                mul();
+                break;
+            case BRANCH:
+                branch();
+                break;
+            case BRANCHNEG:
+                branchneg();
+                break;
+            case BRANCHZERO:
+                branchzero();
+                break;
+            case HALT:
+                halt();
+                break;
+
         }
         
     }
@@ -160,7 +294,7 @@ SC_MODULE(Simpletron)
             if (!initialized){
                 initialized = true;
             } 
-            else {
+            else if (executing){
                 switch(state)
                 {
                     case FETCH_1:
@@ -179,24 +313,18 @@ SC_MODULE(Simpletron)
                         operand_hi = data;
                         fetch_pointer++;
                         address = fetch_pointer;
-                        state = FETCH_3;
+                        state = DECODE;
                         break;
-                    case FETCH_3:
+                    case DECODE:
                         std::cout << "FETCH_3 address: " << address << std::endl; 
                         std::cout << "Data: " << std::hex << data << std::endl;
                         std::cout << "Accumulator: " << std::hex << accumulator << std::endl;
                         operand_lo = data;
                         fetch_pointer++;
-                        state = DECODE;
-                        break;
-                    case DECODE:
-                        std::cout << "DECODE address: " << address << std::endl; 
-                        std::cout << "Data: " << std::hex << data << std::endl;
-                        std::cout << "Accumulator: " << std::hex << accumulator << std::endl; 
-                        address = (operand_hi << 8) | operand_lo; // quando atualizo address já executa função RAM/ROM
+                        address = (operand_hi << 8) | operand_lo; 
                         state = EXEC;
                         break;
-                    case EXEC:
+                   case EXEC:
                         std::cout << "EXEC" << std::endl; 
                         std::cout << "Data: " << std::hex << data << std::endl;
                         std::cout << "Accumulator: " << std::hex << accumulator << std::endl;
@@ -211,7 +339,9 @@ SC_MODULE(Simpletron)
                         ram_write_enable = false;
                         state = FETCH_1;
                 }
+                acc_debug = accumulator;
             }
+            
 
             std::cout << sc_time_stamp() << std::endl;
             wait();
@@ -250,6 +380,7 @@ void test_simpletron_rom_ram()
     sc_signal<int> address;
     sc_signal<int, SC_MANY_WRITERS> data;
     sc_signal<bool> ram_write_enable; // WE = 0 -> Read, WE = 1 -> Write
+    sc_signal<int> acc_debug;
     
     // Open VCD file
     sc_trace_file *wf = sc_create_vcd_trace_file("simpletron");
@@ -259,24 +390,26 @@ void test_simpletron_rom_ram()
     sc_trace(wf, address, "address");
     sc_trace(wf, data, "data");
     sc_trace(wf, ram_write_enable, "ram_we");
+    sc_trace(wf, acc_debug, "accumulator_debug");
 
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
     simpletron.address(address);
     simpletron.data(data);
     simpletron.ram_write_enable(ram_write_enable);
+    simpletron.acc_debug(acc_debug);
 
     Rom rom("rom1");
     rom.address(address);
     rom.data(data);
 
-    Ram ram("ram");
+    Ram ram("ram1");
     ram.address(address);
     ram.data(data);
     ram.write_enable(ram_write_enable);
     
 
-    sc_core::sc_start(180, sc_core::SC_US);
+    sc_core::sc_start(2000, sc_core::SC_US);
     sc_close_vcd_trace_file(wf);
 }
 
