@@ -1,4 +1,17 @@
 #include <systemc.h>
+#include <vector>
+
+std::vector<unsigned> prog1 = {
+    0x10, 0x60, 0x99, // READ      0x0099 - Read N1 from console to address 0x0099
+    0x10, 0x60, 0x98, // READ      0x0098 - Read N2 from console to address 0x0098
+    0x20, 0x60, 0x99, // LOAD      0x0099 - Load N1 to acc
+    0x31, 0x60, 0x98, // SUB       0x0098 - Subtract N2 from N1
+    0x41, 0x00, 0x15, // BRANCHNEG 0x0008 - If N2 > N1, goto 0x0015
+    0x11, 0x60, 0x99, // WRITE     0x0099 - Write N1 to console
+    0x40, 0x00, 0x18, // BRANCH    0x0009 - Go to end
+    0x11, 0x60, 0x98, // WRITE     0x0098 - Write N2 to console
+    0x43, 0x00, 0x00, // HALT
+};
 
 SC_MODULE(Adder)          // module (class) declaration
 {
@@ -34,44 +47,52 @@ SC_MODULE(Rom)
         }
     }
 
+    void load_prog(std::vector<unsigned> prog)
+    {
+        for (unsigned i = 0; i < prog.size(); i++)
+        {
+            memory[i] = prog[i];
+        }
+    }
+
     SC_CTOR(Rom)
     {
         SC_METHOD(fetch);
         sensitive << address;
 
         /* READ 0x6000 */
-        memory[0] = 0x10;
-        memory[1] = 0x60;
-        memory[2] = 0x00;
-
-        /* WRITE 0x6000 */
-        memory[3] = 0x11;
-        memory[4] = 0x60;
-        memory[5] = 0x00;
-
-        /* LOAD 0x6002 */
-        memory[6] = 0x20;
-        memory[7] = 0x60;
-        memory[8] = 0x00;
-
-        /* ADD 0x3000 */
-        memory[9] = 0x30;
-        memory[10] = 0x30;
-        memory[11] = 0x00;
-
-        /* STORE 0x6000 */
-        memory[12] = 0x21;
-        memory[13] = 0x60;
-        memory[14] = 0x00;
-
-        /* BRANCH 0x0000 */
-        memory[15] = 0x40;
-        memory[16] = 0x00;
-        memory[17] = 0x00;
-
-        memory[0x3000] = 0x40;
-        memory[0x3001] = 0x50;
-        memory[0x3002] = 0x60;
+//        memory[0] = 0x10;
+//        memory[1] = 0x60;
+//        memory[2] = 0x00;
+//
+//        /* WRITE 0x6000 */
+//        memory[3] = 0x11;
+//        memory[4] = 0x60;
+//        memory[5] = 0x00;
+//
+//        /* LOAD 0x6002 */
+//        memory[6] = 0x20;
+//        memory[7] = 0x60;
+//        memory[8] = 0x00;
+//
+//        /* ADD 0x3000 */
+//        memory[9] = 0x30;
+//        memory[10] = 0x30;
+//        memory[11] = 0x00;
+//
+//        /* STORE 0x6000 */
+//        memory[12] = 0x21;
+//        memory[13] = 0x60;
+//        memory[14] = 0x00;
+//
+//        /* BRANCH 0x0000 */
+//        memory[15] = 0x40;
+//        memory[16] = 0x00;
+//        memory[17] = 0x00;
+//
+//        memory[0x3000] = 0x40;
+//        memory[0x3001] = 0x50;
+//        memory[0x3002] = 0x60;
     }
 
 };
@@ -167,24 +188,31 @@ SC_MODULE(Simpletron)
     }
     void halt()
     {
+        std::cout << "EXECUTING HALT" << std::endl;
+        int stop;
         executing = false; 
+        std::cin >> stop;
     }
 
 
     void add()
     {
+        std::cout << "EXECUTING ADD" << std::endl;
         accumulator += data; 
     }
 
 
     void sub()
     {
+        std::cout << "EXECUTING SUB" << std::endl;
         accumulator -= data;
     }
 
 
     void div()
     {
+        std::cout << "EXECUTING DIV" << std::endl;
+
         if (data != 0){
             accumulator /= data;
         } else {
@@ -196,17 +224,22 @@ SC_MODULE(Simpletron)
 
     void mul()
     {
+        std::cout << "EXECUTING MUL" << std::endl;
         accumulator *= data;
     }
 
     void branch()
     {
+        std::cout << "EXECUTING BRANCH" << std::endl;
+
         fetch_pointer = address; 
     }
 
 
     void branchneg()
     {
+        std::cout << "EXECUTING BRANCHNEG" << std::endl;
+
         if (accumulator < 0) {
             fetch_pointer = address;
         }
@@ -215,6 +248,8 @@ SC_MODULE(Simpletron)
 
     void branchzero()
     {
+        std::cout << "EXECUTING BRANCHZERO" << std::endl;
+
         if (accumulator == 0) {
             fetch_pointer = address;
         }
@@ -222,13 +257,18 @@ SC_MODULE(Simpletron)
 
     void write()
     {
-        std::cout << "CONSOLE: " << std::hex << data << std::endl;
+        std::cout << "EXECUTING WRITE" << std::endl;
+
+        std::cout << "### CONSOLE: " << std::hex << data << std::endl;
     }
 
 
     void read()
     { 
+        std::cout << "EXECUTING READ" << std::endl;
+
         int read_data;
+        std::cout << " ### CONSOLE: ";
         std::cin >> read_data;
 
         data = read_data;
@@ -355,6 +395,12 @@ SC_MODULE(Simpletron)
     }
 
 };
+
+struct mystr {
+    int a;
+    int b;
+};
+
 /*
 void test_simpletron()
 {
@@ -403,13 +449,15 @@ void test_simpletron_rom_ram()
     rom.address(address);
     rom.data(data);
 
+    rom.load_prog(prog1);
+
     Ram ram("ram1");
     ram.address(address);
     ram.data(data);
     ram.write_enable(ram_write_enable);
     
 
-    sc_core::sc_start(2000, sc_core::SC_US);
+    sc_core::sc_start(500, sc_core::SC_US);
     sc_close_vcd_trace_file(wf);
 }
 
