@@ -1,5 +1,5 @@
 $date
-     Aug 03, 2023       06:40:56
+     Aug 04, 2023       07:40:58
 $end
 
 $version
@@ -15,9 +15,14 @@ $var wire    1  aaaaa  clock       $end
 $var wire   32  aaaab  address [31:0]  $end
 $var wire   32  aaaac  data [31:0]  $end
 $var wire    1  aaaad  ram_we       $end
-$var wire   32  aaaae  accumulator_debug [31:0]  $end
-$var wire    1  aaaaf  rom_ce       $end
-$var wire    1  aaaag  ram_ce       $end
+$var wire    1  aaaae  rom_ce       $end
+$var wire    1  aaaaf  ram_ce       $end
+$var wire   32  aaaag  gpio_output [31:0]  $end
+$var wire    1  aaaah  gpio_ce       $end
+$var wire   32  aaaai  accumulator_debug [31:0]  $end
+$var wire   32  aaaaj  state_debug [31:0]  $end
+$var wire   32  aaaak  opcode_debug [31:0]  $end
+$var wire   32  aaaal  ip_debug [31:0]  $end
 $upscope $end
 $enddefinitions  $end
 
@@ -30,13 +35,20 @@ $dumpvars
 b0 aaaab
 b0 aaaac
 0aaaad
-b0 aaaae
-1aaaaf
-0aaaag
+1aaaae
+0aaaaf
+b0 aaaag
+0aaaah
+b0 aaaai
+b0 aaaaj
+b0 aaaak
+b0 aaaal
 $end
 
 #10000000
 1aaaaa
+b1 aaaaj
+b1 aaaal
 
 #15000000
 0aaaaa
@@ -44,18 +56,20 @@ b1010010011001 aaaac
 
 #20000000
 1aaaaa
-b10010011001 aaaab
-0aaaaf
-1aaaag
+b10 aaaaj
+b1 aaaak
 
 #25000000
 0aaaaa
-b0 aaaac
 
 #30000000
 1aaaaa
+b10010011001 aaaab
 b1 aaaac
 1aaaad
+0aaaae
+1aaaaf
+b0 aaaaj
 
 #35000000
 0aaaaa
@@ -64,8 +78,10 @@ b1 aaaac
 1aaaaa
 b1 aaaab
 0aaaad
-1aaaaf
-0aaaag
+1aaaae
+0aaaaf
+b1 aaaaj
+b10 aaaal
 
 #45000000
 0aaaaa
@@ -73,18 +89,19 @@ b1010010011000 aaaac
 
 #50000000
 1aaaaa
-b10010011000 aaaab
-0aaaaf
-1aaaag
+b10 aaaaj
 
 #55000000
 0aaaaa
-b0 aaaac
 
 #60000000
 1aaaaa
+b10010011000 aaaab
 b10 aaaac
 1aaaad
+0aaaae
+1aaaaf
+b0 aaaaj
 
 #65000000
 0aaaaa
@@ -93,8 +110,10 @@ b10 aaaac
 1aaaaa
 b10 aaaab
 0aaaad
-1aaaaf
-0aaaag
+1aaaae
+0aaaaf
+b1 aaaaj
+b11 aaaal
 
 #75000000
 0aaaaa
@@ -103,8 +122,10 @@ b11010010011001 aaaac
 #80000000
 1aaaaa
 b10010011001 aaaab
-0aaaaf
-1aaaag
+0aaaae
+1aaaaf
+b10 aaaaj
+b11 aaaak
 
 #85000000
 0aaaaa
@@ -112,7 +133,8 @@ b1 aaaac
 
 #90000000
 1aaaaa
-b1 aaaae
+b1 aaaai
+b0 aaaaj
 
 #95000000
 0aaaaa
@@ -120,8 +142,10 @@ b1 aaaae
 #100000000
 1aaaaa
 b11 aaaab
-1aaaaf
-0aaaag
+1aaaae
+0aaaaf
+b1 aaaaj
+b100 aaaal
 
 #105000000
 0aaaaa
@@ -130,8 +154,10 @@ b110010010011000 aaaac
 #110000000
 1aaaaa
 b10010011000 aaaab
-0aaaaf
-1aaaag
+0aaaae
+1aaaaf
+b10 aaaaj
+b110 aaaak
 
 #115000000
 0aaaaa
@@ -139,7 +165,8 @@ b10 aaaac
 
 #120000000
 1aaaaa
-b11111111111111111111111111111111 aaaae
+b11111111111111111111111111111111 aaaai
+b0 aaaaj
 
 #125000000
 0aaaaa
@@ -147,8 +174,10 @@ b11111111111111111111111111111111 aaaae
 #130000000
 1aaaaa
 b100 aaaab
-1aaaaf
-0aaaag
+1aaaae
+0aaaaf
+b1 aaaaj
+b101 aaaal
 
 #135000000
 0aaaaa
@@ -156,29 +185,37 @@ b1010000000000111 aaaac
 
 #140000000
 1aaaaa
-b111 aaaab
+b10 aaaaj
+b1010 aaaak
 
 #145000000
 0aaaaa
-b10010010011000 aaaac
 
 #150000000
 1aaaaa
+b0 aaaaj
+b111 aaaal
 
 #155000000
 0aaaaa
 
 #160000000
 1aaaaa
+b111 aaaab
+b1 aaaaj
+b1000 aaaal
 
 #165000000
 0aaaaa
+b10010010011000 aaaac
 
 #170000000
 1aaaaa
 b10010011000 aaaab
-0aaaaf
-1aaaag
+0aaaae
+1aaaaf
+b10 aaaaj
+b10 aaaak
 
 #175000000
 0aaaaa
@@ -186,6 +223,7 @@ b10 aaaac
 
 #180000000
 1aaaaa
+b0 aaaaj
 
 #185000000
 0aaaaa
@@ -193,41 +231,60 @@ b10 aaaac
 #190000000
 1aaaaa
 b1000 aaaab
-1aaaaf
-0aaaag
+1aaaae
+0aaaaf
+b1 aaaaj
+b1001 aaaal
 
 #195000000
 0aaaaa
-b1100001100000000 aaaac
+b100111100000000 aaaac
 
 #200000000
 1aaaaa
-b1100000000 aaaab
+b10 aaaaj
+b100 aaaak
 
 #205000000
 0aaaaa
-b0 aaaac
 
 #210000000
 1aaaaa
+b111100000000 aaaab
+b11111111111111111111111111111111 aaaac
+1aaaad
+0aaaae
+1aaaah
+b0 aaaaj
 
 #215000000
 0aaaaa
+b11111111111111111111111111111111 aaaag
 
 #220000000
 1aaaaa
+b1001 aaaab
+0aaaad
+1aaaae
+0aaaah
+b1 aaaaj
+b1010 aaaal
 
 #225000000
 0aaaaa
+b1100001100000000 aaaac
 
 #230000000
 1aaaaa
+b10 aaaaj
+b1100 aaaak
 
 #235000000
 0aaaaa
 
 #240000000
 1aaaaa
+b0 aaaaj
 
 #245000000
 0aaaaa

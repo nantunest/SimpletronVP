@@ -1,31 +1,35 @@
+#include <systemc.h>
+
 SC_MODULE(MemoryMux)
 {
     sc_in<int> address;
     sc_out<bool> rom_ce;
     sc_out<bool> ram_ce;
+    sc_out<bool> gpio_ce;
 
-    void do_mux()
+    void update()
     {
+        rom_ce = false;
+        ram_ce = false;
+        gpio_ce = false;
+
         if (address < 0x400)
         {
             rom_ce = true;
-            ram_ce = false;
         }
-        else if (address < 0xF00)
+        else if (address >= 0x400 && address < 0xF00)
         {
-           rom_ce = false;
            ram_ce = true;
         }
-        else
+        else if (address == 0xF00)
         {
-            rom_ce = false;
-            ram_ce = false;
+            gpio_ce = true;
         }
     }
 
     SC_CTOR(MemoryMux)
     {
-        SC_METHOD(do_mux);
+        SC_METHOD(update);
         sensitive << address;
     }
 

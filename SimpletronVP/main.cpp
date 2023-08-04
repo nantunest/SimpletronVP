@@ -4,6 +4,8 @@
 #include "ram.h"
 #include "rom.h"
 #include "mux.h"
+#include "gpio.h"
+
 #include "simpletron.h"
 
 std::vector<unsigned> prog1 = {
@@ -15,7 +17,8 @@ std::vector<unsigned> prog1 = {
     0x2499, // l05 WRITE     0x499 - Write N1 to console
     0x9008, // l06 JMP       0x008 - Go to end
     0x2498, // l07 WRITE     0x498 - Write N2 to console
-    0xC300  // l08 HALT
+    0x4F00, // l08 STORE     0xF00 - Write acc to gpio
+    0xC300  // l09 HALT
 };
 
 int sc_main(int argc, char* argv[]) {
@@ -26,7 +29,15 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
     sc_signal<bool> ram_ce;
     sc_signal<bool> rom_ce;
+    sc_signal<bool> gpio_ce;
+    sc_signal<int> gpio_output;
+    sc_signal<int> simp_state;
+
+    // Debug signals
     sc_signal<int> acc_debug;
+    sc_signal<int> state_debug;
+    sc_signal<int> opcode_debug;
+    sc_signal<int> ip_debug;
     
     // Open VCD file
     sc_trace_file *wf = sc_create_vcd_trace_file("sim_out");
@@ -36,21 +47,41 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, address, "address");
     sc_trace(wf, data, "data");
     sc_trace(wf, ram_rw, "ram_we");
-    sc_trace(wf, acc_debug, "accumulator_debug");
     sc_trace(wf, rom_ce, "rom_ce");
     sc_trace(wf, ram_ce, "ram_ce");
+    sc_trace(wf, gpio_output, "gpio_output");
+    sc_trace(wf, gpio_ce, "gpio_ce");
+
+    // Debug signals
+    sc_trace(wf, acc_debug, "accumulator_debug");
+    sc_trace(wf, state_debug, "state_debug");
+    sc_trace(wf, opcode_debug, "opcode_debug");
+    sc_trace(wf, ip_debug, "ip_debug");
 
     MemoryMux memoryMux("mmux");
     memoryMux.address(address);
     memoryMux.rom_ce(rom_ce);
     memoryMux.ram_ce(ram_ce);
+    memoryMux.gpio_ce(gpio_ce);
+
+    Gpio gpio("gpio1");
+    gpio.ce(gpio_ce);
+    gpio.clk(clk);
+    gpio.address(address);
+    gpio.data(data);
+    gpio.output_pins(gpio_output);
 
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
     simpletron.address(address);
     simpletron.data(data);
     simpletron.ram_rw(ram_rw);
+
+    // Debug signals
     simpletron.acc_debug(acc_debug);
+    simpletron.state_debug(state_debug);
+    simpletron.opcode_debug(opcode_debug);
+    simpletron.ip_debug(ip_debug);
 
     Rom rom("rom1");
     rom.address(address);

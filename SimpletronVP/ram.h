@@ -1,3 +1,5 @@
+#include <systemc.h>
+
 SC_MODULE(Ram)
 {
     static constexpr int init_address = 0x400;

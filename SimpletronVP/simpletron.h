@@ -1,10 +1,16 @@
+#include <systemc.h>
+
 SC_MODULE(Simpletron)
 {
     sc_in<bool> clk;
     sc_out<int> address;
     sc_inout<int> data;
     sc_out<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
+    
     sc_out<int> acc_debug;
+    sc_out<int> state_debug;
+    sc_out<int> opcode_debug;
+    sc_out<int> ip_debug;
 
     int i_address = 0;
     int i_data = 0;
@@ -34,13 +40,14 @@ SC_MODULE(Simpletron)
     int instruction_pointer = 0;
 
     int opcode;
-    int operand;
+    int operand_addr;
+    int operand_data;
 
 
     void load()
     {
         std::cout << "EXECUTING LOAD" << std::endl;
-        accumulator = data;
+        accumulator = operand_data;
     }
     
     void store()
@@ -48,6 +55,7 @@ SC_MODULE(Simpletron)
         std::cout << "EXECUTING STORE" << std::endl;
         i_data = accumulator;
         i_ram_rw = true;
+        i_address = operand_addr;
     }
     void halt()
     {
@@ -61,13 +69,13 @@ SC_MODULE(Simpletron)
     void add()
     {
         std::cout << "EXECUTING ADD" << std::endl;
-        accumulator += data; 
+        accumulator += operand_data; 
     }
 
 
     void sub()
     {
-        std::cout << "EXECUTING SUB: " << accumulator << " - " << data << std::endl;
+        std::cout << "EXECUTING SUB: " << accumulator << " - " << operand_data << std::endl;
         accumulator -= static_cast<int>(data);
     }
 
@@ -77,7 +85,7 @@ SC_MODULE(Simpletron)
         std::cout << "EXECUTING DIV" << std::endl;
 
         if (data != 0){
-            accumulator /= data;
+            accumulator /= operand_data;
         } else {
             std::cout << "Error: Division by zero"; 
             halt();
@@ -88,14 +96,14 @@ SC_MODULE(Simpletron)
     void mul()
     {
         std::cout << "EXECUTING MUL" << std::endl;
-        accumulator *= data;
+        accumulator *= operand_data;
     }
 
     void jmp()
     {
         std::cout << "EXECUTING BRANCH" << std::endl;
 
-        instruction_pointer = address; 
+        instruction_pointer = operand_addr; 
     }
 
 
@@ -104,7 +112,7 @@ SC_MODULE(Simpletron)
         std::cout << "EXECUTING BRANCHNEG" << std::endl;
 
         if (accumulator < 0) {
-            instruction_pointer = address;
+            instruction_pointer = operand_addr;
         }
     }
 
@@ -114,14 +122,14 @@ SC_MODULE(Simpletron)
         std::cout << "EXECUTING BRANCHZERO" << std::endl;
 
         if (accumulator == 0) {
-            instruction_pointer = address;
+            instruction_pointer = operand_addr;
         }
     }
 
     void write()
     {
         std::cout << "EXECUTING WRITE" << std::endl;
-        std::cout << "### CONSOLE: " << std::hex << data << std::endl;
+        std::cout << "### CONSOLE: " << std::hex << operand_data << std::endl;
     }
 
 
@@ -133,6 +141,7 @@ SC_MODULE(Simpletron)
         std::cin >> data_out;
         i_ram_rw = true;
         i_data = data_out;
+        i_address = operand_addr;
     }
 
 
@@ -213,6 +222,7 @@ SC_MODULE(Simpletron)
            
             std::cout << "---------------------------------------------------------------------" << std::endl;
             std::cout << "Iteration: " << cycle++ << std::endl;
+
         
             if (!initialized){
 
@@ -257,13 +267,19 @@ SC_MODULE(Simpletron)
 
                         /* Update internal registers */
                         opcode = (data & 0xF000) >> 12;
-                        operand = data & 0x0FFF;
-                        std::cout << "OPCODE: " << opcode << " " << "OPERAND: " << operand << std::endl;
+                        operand_addr = data & 0x0FFF;
+                        std::cout << "OPCODE: " << opcode << " " << "OPERAND: " << operand_addr << std::endl;
                         
                         /* Set state outputs */
                         set_defaults();
 
-                        i_address = operand;
+                        if (opcode == LOAD || opcode == ADD || opcode == SUB
+                         || opcode == DIV  || opcode == MUL || opcode == WRITE
+                         )
+                        {
+                            i_address = operand_addr;
+                        }
+
 
                         /* State Leave */
                         std::cout << "[State DECODE ->]" << std::endl;
@@ -280,6 +296,8 @@ SC_MODULE(Simpletron)
                         std::cout << "[State EXEC <-]" << std::endl;
                         assign_internals();
                         print_internals();
+
+                        operand_data = data;
 
                         /* Execute instruction */
                         set_defaults();
@@ -301,7 +319,11 @@ SC_MODULE(Simpletron)
                         ram_rw = true;
                         state = FETCH;
                 }
+                // Debug signals
                 acc_debug = accumulator;
+                state_debug = state;
+                opcode_debug = opcode;
+                ip_debug = instruction_pointer;
             }
             
 

@@ -1,3 +1,5 @@
+#include <systemc.h>
+
 SC_MODULE(Rom)
 {
     sc_in<int> address;
