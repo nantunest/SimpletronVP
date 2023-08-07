@@ -7,6 +7,15 @@ SC_MODULE(MemoryMux)
     sc_out<bool> ram_ce;
     sc_out<bool> gpio_ce;
 
+    static constexpr int rom_addr = 0x000;
+    static constexpr int rom_size = 0x400;
+    static constexpr int ram_addr = 0x400;
+    static constexpr int ram_size = 0xB00;
+    static constexpr int gpio_addr = 0xF00;
+    static constexpr int gpio_size = 0x010;
+    static constexpr int timer_addr = 0xF10;
+    static constexpr int timer_size = 0x010;
+
     void update()
     {
         rom_ce = false;

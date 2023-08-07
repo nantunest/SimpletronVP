@@ -5,6 +5,7 @@
 #include "rom.h"
 #include "mux.h"
 #include "gpio.h"
+#include "timer.h"
 
 #include "simpletron.h"
 
