@@ -7,11 +7,6 @@ SC_MODULE(Simpletron)
     sc_inout<int> data;
     sc_out<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
     
-    sc_out<int> acc_debug;
-    sc_out<int> state_debug;
-    sc_out<int> opcode_debug;
-    sc_out<int> ip_debug;
-
     int i_address = 0;
     int i_data = 0;
     bool i_ram_rw = false;
@@ -228,7 +223,6 @@ SC_MODULE(Simpletron)
 
                 address = instruction_pointer;
                 set_defaults();
-                acc_debug = accumulator;
                 initialized = true;
             } 
             else if (executing){
@@ -319,11 +313,6 @@ SC_MODULE(Simpletron)
                         ram_rw = true;
                         state = FETCH;
                 }
-                // Debug signals
-                acc_debug = accumulator;
-                state_debug = state;
-                opcode_debug = opcode;
-                ip_debug = instruction_pointer;
             }
             
 

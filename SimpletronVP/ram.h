@@ -1,10 +1,11 @@
+#pragma once
 #include <systemc.h>
+#include "mux.h"
 
 SC_MODULE(Ram)
 {
-    static constexpr int init_address = 0x400;
-    static constexpr int end_address = 0xF00;
-    static constexpr int size = end_address - init_address;
+    static constexpr int base_address = MemoryMux::ram_addr;
+    static constexpr int size = MemoryMux::ram_size;
 
     sc_in<int> address;
     sc_inout<int> data;
@@ -18,7 +19,7 @@ SC_MODULE(Ram)
     {
         if (ce) {
 
-            const unsigned int memory_address = address - init_address;
+            const unsigned int memory_address = address - base_address;
             std::cout << "[RAM]: read address = " << memory_address <<  std::endl;
 
             if (memory_address - size)

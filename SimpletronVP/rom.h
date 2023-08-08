@@ -1,4 +1,6 @@
+#pragma once
 #include <systemc.h>
+#include "mux.h"
 
 SC_MODULE(Rom)
 {
@@ -7,16 +9,15 @@ SC_MODULE(Rom)
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    static constexpr int init_address = 0x000;
-    static constexpr int end_address = 0x400;
-    static constexpr int size = end_address - init_address;
+    static constexpr int base_address = MemoryMux::rom_addr;
+    static constexpr int size = MemoryMux::rom_size;
 
     int memory[size];
 
     void fetch()
     {
         if (ce) {
-            const unsigned int memory_address = address - init_address;
+            const unsigned int memory_address = address - base_address;
             std::cout << "[ROM]: read address = " << memory_address <<  std::endl;
 
             if (memory_address < size)

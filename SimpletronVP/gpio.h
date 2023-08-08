@@ -1,4 +1,6 @@
+#pragma once
 #include <systemc.h>
+#include "mux.h"
 
 SC_MODULE(Gpio)
 {
