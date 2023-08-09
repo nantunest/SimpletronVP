@@ -1,5 +1,5 @@
 $date
-     Aug 08, 2023       08:03:21
+     Aug 09, 2023       06:46:03
 $end
 
 $version
@@ -12,27 +12,27 @@ $end
 
 $scope module SystemC $end
 $scope module simpletron $end
-$var wire   32  aaaal  accumulator [31:0]  $end
+$var wire   16  aaaal  accumulator [15:0]  $end
 $var wire   32  aaaam  state [31:0]  $end
-$var wire   32  aaaan  opcode [31:0]  $end
-$var wire   32  aaaao  instruction_pointer [31:0]  $end
+$var wire   16  aaaan  opcode [15:0]  $end
+$var wire   16  aaaao  instruction_pointer [15:0]  $end
 $upscope $end
 $scope module sys $end
 $var wire    1  aaaaa  clock       $end
-$var wire   32  aaaab  address [31:0]  $end
-$var wire   32  aaaac  data [31:0]  $end
+$var wire   16  aaaab  address [15:0]  $end
+$var wire   16  aaaac  data [15:0]  $end
 $var wire    1  aaaad  ram_we       $end
 $var wire    1  aaaae  rom_ce       $end
 $var wire    1  aaaaf  ram_ce       $end
-$var wire   32  aaaag  gpio_output [31:0]  $end
+$var wire   16  aaaag  gpio_output [15:0]  $end
 $var wire    1  aaaah  gpio_ce       $end
 $var wire    1  aaaai  timer_ce       $end
 $var wire    1  aaaaj  timer_tick       $end
 $var wire    1  aaaak  pwm_out       $end
 $upscope $end
 $scope module timer $end
-$var wire   32  aaaap  reg_countval [31:0]  $end
-$var wire   32  aaaaq  reg_status [31:0]  $end
+$var wire   16  aaaap  reg_countval [15:0]  $end
+$var wire   16  aaaaq  reg_status [15:0]  $end
 $upscope $end
 $upscope $end
 $enddefinitions  $end
@@ -238,6 +238,7 @@ b1010 aaaac
 b110 aaaab
 0aaaad
 1aaaae
+0aaaai
 b111 aaaao
 
 #195000000
@@ -401,6 +402,7 @@ b111100010000 aaaab
 b10 aaaac
 1aaaad
 0aaaae
+1aaaai
 
 #365000000
 0aaaaa
@@ -412,6 +414,7 @@ b10 aaaaq
 b1100 aaaab
 0aaaad
 1aaaae
+0aaaai
 b1101 aaaao
 
 #375000000

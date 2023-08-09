@@ -4,20 +4,20 @@
 
 SC_MODULE(Rom)
 {
-    sc_in<int> address;
-    sc_out<int> data;
+    sc_in<short> address;
+    sc_out<short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    static constexpr int base_address = MemoryMux::rom_addr;
-    static constexpr int size = MemoryMux::rom_size;
+    static constexpr short base_address = MemoryMux::rom_addr;
+    static constexpr short size = MemoryMux::rom_size;
 
-    int memory[size];
+    short memory[size];
 
     void fetch()
     {
         if (ce) {
-            const unsigned int memory_address = address - base_address;
+            const unsigned short memory_address = address - base_address;
             std::cout << "[ROM]: read address = " << memory_address <<  std::endl;
 
             if (memory_address < size)

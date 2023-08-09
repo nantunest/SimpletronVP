@@ -4,26 +4,25 @@
 
 SC_MODULE(Pwm)
 {
-    sc_in<int> address;
-    sc_inout<int> data;
+    sc_in<short> address;
+    sc_inout<short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    sc_in<bool> timer_tick;
-    sc_in<int> timer_counter;
+    sc_in<short> timer_counter;
 
     sc_out<bool> out;
 
-    static constexpr int base_address = MemoryMux::pwm_addr;
+    static constexpr short base_address = MemoryMux::pwm_addr;
 
-    static constexpr int status_addr = base_address + 0x00;
-    static constexpr int width_addr = base_address + 0x01;
+    static constexpr short status_addr = base_address + 0x00;
+    static constexpr short width_addr = base_address + 0x01;
 
-    int reg_status = 0;
-    int reg_width = 0;
+    short reg_status = 0;
+    short reg_width = 0;
 
     // Not addressable
-    int reg_countclk = 0;
+    short reg_countclk = 0;
 
     void update()
     {
@@ -43,16 +42,16 @@ SC_MODULE(Pwm)
         }
 
         // Operation
+        // TODO: Synchronize start of operation with start of timer? 
         if (reg_status == 0x01) // Switching 
         {
-            if (reg_width == timer_counter)
-            {
-                out = false;
-            }
-            
-            if (timer_tick)
+            if (timer_counter < reg_width)
             {
                 out = true;
+            }
+            else
+            {
+                out = false;
             }
         }
     }

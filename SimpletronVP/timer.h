@@ -4,28 +4,28 @@
 
 SC_MODULE(Timer)
 {
-    sc_in<int> address;
-    sc_inout<int> data;
+    sc_in<short> address;
+    sc_inout<short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
 
     sc_out<bool> tick;
-    sc_out<int> counter;
+    sc_out<short> counter;
 
-    static constexpr int base_address = MemoryMux::timer_addr;
+    static constexpr short base_address = MemoryMux::timer_addr;
 
-    static constexpr int status_addr = base_address + 0x00;
-    static constexpr int prescalar_addr = base_address + 0x01;
-    static constexpr int modulus_addr = base_address + 0x02;
-    static constexpr int countval_addr = base_address + 0x03;
+    static constexpr short status_addr = base_address + 0x00;
+    static constexpr short prescalar_addr = base_address + 0x01;
+    static constexpr short modulus_addr = base_address + 0x02;
+    static constexpr short countval_addr = base_address + 0x03;
 
-    int reg_status = 0;
-    int reg_prescalar = 1;
-    int reg_modulus = 0;
-    int reg_countval = 0;
+    short reg_status = 0;
+    short reg_prescalar = 1;
+    short reg_modulus = 0;
+    short reg_countval = 0;
 
     // Not addressable
-    int reg_countclk = 0;
+    short reg_countclk = 0;
 
     void update()
     {

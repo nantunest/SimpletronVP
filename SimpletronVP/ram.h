@@ -4,22 +4,22 @@
 
 SC_MODULE(Ram)
 {
-    static constexpr int base_address = MemoryMux::ram_addr;
-    static constexpr int size = MemoryMux::ram_size;
+    static constexpr short base_address = MemoryMux::ram_addr;
+    static constexpr short size = MemoryMux::ram_size;
 
-    sc_in<int> address;
-    sc_inout<int> data;
+    sc_in<short> address;
+    sc_inout<short> data;
     sc_in<bool> write_enable; // WE = 0 -> Read, WE = 1 -> Write
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    int memory[size];
+    short memory[size];
 
     void read_write()
     {
         if (ce) {
 
-            const unsigned int memory_address = address - base_address;
+            const unsigned short memory_address = address - base_address;
             std::cout << "[RAM]: read address = " << memory_address <<  std::endl;
 
             if (memory_address - size)

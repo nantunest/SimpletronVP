@@ -61,8 +61,8 @@ std::vector<unsigned> prog3 = {
 int sc_main(int argc, char* argv[]) {
    
     sc_clock clk("clock", 10, sc_core::SC_US, 0.5, 10, sc_core::SC_US);
-    sc_signal<int> address;
-    sc_signal<int, SC_MANY_WRITERS> data;
+    sc_signal<short> address;
+    sc_signal<short, SC_MANY_WRITERS> data;
     sc_signal<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
 
     sc_signal<bool> ram_ce;
@@ -71,9 +71,9 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool> timer_ce;
     sc_signal<bool> pwm_ce;
 
-    sc_signal<int> gpio_output;
+    sc_signal<short> gpio_output;
     sc_signal<bool> timer_tick;
-    sc_signal<int> timer_counter;
+    sc_signal<short> timer_counter;
     sc_signal<bool> pwm_out;
 
     // Open VCD file
@@ -92,7 +92,6 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, timer_tick, "sys.timer_tick");
     sc_trace(wf, pwm_out, "sys.pwm_out");
 
-    
     MemoryMux memoryMux("mmux");
     memoryMux.address(address);
     memoryMux.rom_ce(rom_ce);
@@ -122,7 +121,6 @@ int sc_main(int argc, char* argv[]) {
     pwm.clk(clk);
     pwm.ce(pwm_ce);
     pwm.out(pwm_out);
-    pwm.timer_tick(timer_tick);
     pwm.timer_counter(timer_counter);
 
     Simpletron simpletron("simpletron1");

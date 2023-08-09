@@ -1,14 +1,15 @@
+#pragma once
 #include <systemc.h>
 
 SC_MODULE(Simpletron)
 {
     sc_in<bool> clk;
-    sc_out<int> address;
-    sc_inout<int> data;
+    sc_out<short> address;
+    sc_inout<short> data;
     sc_out<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
     
-    int i_address = 0;
-    int i_data = 0;
+    short i_address = 0;
+    short i_data = 0;
     bool i_ram_rw = false;
 
     enum State {FETCH, DECODE, EXEC, WRITE_BACK};
@@ -28,15 +29,15 @@ SC_MODULE(Simpletron)
                   HALT      = 0x0C
                  };
 
-    int accumulator = 0;
-    int fetch_pointer = 0;
+    short accumulator = 0;
+    short fetch_pointer = 0;
     bool initialized = false;
     bool executing = true;
-    int instruction_pointer = 0;
+    short instruction_pointer = 0;
 
-    int opcode;
-    int operand_addr;
-    int operand_data;
+    short opcode;
+    short operand_addr;
+    short operand_data;
 
 
     void load()
@@ -55,7 +56,7 @@ SC_MODULE(Simpletron)
     void halt()
     {
         std::cout << "EXECUTING HALT" << std::endl;
-        int stop;
+        short stop;
         executing = false; 
         std::cin >> stop;
     }
@@ -71,7 +72,7 @@ SC_MODULE(Simpletron)
     void sub()
     {
         std::cout << "EXECUTING SUB: " << accumulator << " - " << operand_data << std::endl;
-        accumulator -= static_cast<int>(data);
+        accumulator -= static_cast<short>(data);
     }
 
 
@@ -130,7 +131,7 @@ SC_MODULE(Simpletron)
 
     void read()
     { 
-        int data_out;
+        short data_out;
         std::cout << "EXECUTING READ" << std::endl;
         std::cout << " ### CONSOLE: ";
         std::cin >> data_out;
@@ -211,7 +212,7 @@ SC_MODULE(Simpletron)
    
     void run()
     {
-        int cycle = 0;
+        short cycle = 0;
         
         while(true){
            
