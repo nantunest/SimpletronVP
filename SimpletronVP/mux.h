@@ -9,6 +9,7 @@ SC_MODULE(MemoryMux)
     sc_out<bool> gpio_ce;
     sc_out<bool> timer_ce;
     sc_out<bool> pwm_ce;
+    sc_out<bool> spi_ce;
 
     static constexpr short rom_addr = 0x000;
     static constexpr short rom_size = 0x400;
@@ -20,8 +21,8 @@ SC_MODULE(MemoryMux)
     static constexpr short timer_size = 0x010;
     static constexpr short pwm_addr = 0xF20;
     static constexpr short pwm_size = 0x010;
-    static constexpr short pwm_addr = 0xF30;
-    static constexpr short pwm_size = 0x010;
+    static constexpr short spi_addr = 0xF30;
+    static constexpr short spi_size = 0x010;
 
     static constexpr short ram_addr_end = ram_addr + ram_size;
     static constexpr short rom_addr_end = rom_addr + rom_size;

@@ -8,6 +8,8 @@
 #include "timer.h"
 #include "pwm.h"
 
+#include "spi.h"
+
 #include "simpletron.h"
 
 // Basic RAM and ROM usage
