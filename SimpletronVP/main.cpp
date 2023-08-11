@@ -7,13 +7,12 @@
 #include "gpio.h"
 #include "timer.h"
 #include "pwm.h"
-
 #include "spi.h"
 
 #include "simpletron.h"
 
 // Basic RAM and ROM usage
-std::vector<unsigned> prog1 = {
+std::vector<unsigned short> prog1 = {
     0x1499, // l00 READ      0x499 - Read N1 from console to address 0x0499 (RAM)
     0x1498, // l01 READ      0x498 - Read N2 from console to address 0x0498 (RAM)
     0x3499, // l02 LOAD      0x499 - Load N1 from RAM to acc
@@ -27,7 +26,7 @@ std::vector<unsigned> prog1 = {
 };
 
 // Timer usage
-std::vector<unsigned> prog2 = {
+std::vector<unsigned short> prog2 = {
     0x1499, // l00 READ     0x499 - Read Timer modulus (Tm)
     0x1498, // l01 READ     0x498 - Read Timer mode of operation (1 or 2) (To)
     0x3499, // l02 LOAD     0x499 - Load Tm to acc
@@ -39,7 +38,7 @@ std::vector<unsigned> prog2 = {
 };
 
 // Timer and PWM
-std::vector<unsigned> prog3 = {
+std::vector<unsigned short> prog3 = {
     0x1499, // l00 READ     0x499 - Read Timer modulus (Tm) <= 10
     0x1498, // l01 READ     0x498 - Read Timer mode of operation (1 or 2) (To) <= 2
     0x1497, // l02 READ     0x497 - Read PWM width (Pw) <= 7
@@ -60,6 +59,24 @@ std::vector<unsigned> prog3 = {
     0x900C  // l0C JMP      0x00C - Loop forever 
 };
 
+// SPI
+std::vector<unsigned short> prog4 = {
+    0x1499, // l00 READ     0x499 - Read Shift (Sh)
+    0x1498, // l01 READ     0x498 - Read Prescalar (Ps)
+    0x1497, // l02 READ     0x497 - Read Cmd (Cmd)
+
+    0x3499, // l03 LOAD     0x499 - Load Sh to acc
+    0x4F33, // l04 STORE    0xF33 - Store Sh to shift reg 
+
+    0x3498, // l05 LOAD     0x498 - Load Ps to acc
+    0x4F31, // l06 STORE    0xF31 - Store Ps to prescalar reg 
+
+    0x3497, // l07 LOAD     0x497 - Load Cmd to acc
+    0x4F32, // l08 STORE    0xF32 - Store Cmd to prescalar reg 
+
+    0x9009  // l0C JMP      0x009 - Loop forever 
+};
+
 int sc_main(int argc, char* argv[]) {
    
     sc_clock clk("clock", 10, sc_core::SC_US, 0.5, 10, sc_core::SC_US);
@@ -72,11 +89,17 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool> gpio_ce;
     sc_signal<bool> timer_ce;
     sc_signal<bool> pwm_ce;
+    sc_signal<bool> spi_ce;
 
     sc_signal<short> gpio_output;
     sc_signal<bool> timer_tick;
     sc_signal<short> timer_counter;
     sc_signal<bool> pwm_out;
+
+    sc_signal<bool> miso;
+    sc_signal<bool> mosi;
+    sc_signal<bool> sclk;
+    sc_signal<bool> ss;
 
     // Open VCD file
     sc_trace_file *wf = sc_create_vcd_trace_file("sim_out");
@@ -93,6 +116,10 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, timer_ce, "sys.timer_ce");
     sc_trace(wf, timer_tick, "sys.timer_tick");
     sc_trace(wf, pwm_out, "sys.pwm_out");
+    sc_trace(wf, miso, "miso");
+    sc_trace(wf, mosi, "mosi");
+    sc_trace(wf, sclk, "sclk");
+    sc_trace(wf, ss, "ss");
 
     MemoryMux memoryMux("mmux");
     memoryMux.address(address);
@@ -101,6 +128,7 @@ int sc_main(int argc, char* argv[]) {
     memoryMux.gpio_ce(gpio_ce);
     memoryMux.timer_ce(timer_ce);
     memoryMux.pwm_ce(pwm_ce);
+    memoryMux.spi_ce(spi_ce);
 
     Gpio gpio("gpio1");
     gpio.ce(gpio_ce);
@@ -125,6 +153,16 @@ int sc_main(int argc, char* argv[]) {
     pwm.out(pwm_out);
     pwm.timer_counter(timer_counter);
 
+    Spi spi("spi1");
+    spi.address(address);
+    spi.data(data);
+    spi.clk(clk);
+    spi.ce(spi_ce);
+    spi.miso(miso);
+    spi.mosi(mosi);
+    spi.sclk(sclk);
+    spi.ss(ss);
+
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
     simpletron.address(address);
@@ -138,7 +176,7 @@ int sc_main(int argc, char* argv[]) {
     rom.ce(rom_ce);
     rom_ce.write(false);
 
-    rom.load_prog(prog3);
+    rom.load_prog(prog4);
 
     Ram ram("ram1");
     ram.address(address);
@@ -160,6 +198,9 @@ int sc_main(int argc, char* argv[]) {
     std::cout << "Starting simulation" << std::endl;
 
     sc_core::sc_start(1000, sc_core::SC_US);
+
+
+    std::cout << "End of Simulation." << std::endl;
     sc_close_vcd_trace_file(wf);
 
     return 0;

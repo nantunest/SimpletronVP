@@ -12,7 +12,7 @@ SC_MODULE(Rom)
     static constexpr short base_address = MemoryMux::rom_addr;
     static constexpr short size = MemoryMux::rom_size;
 
-    short memory[size];
+    unsigned short memory[size];
 
     void fetch()
     {
@@ -28,9 +28,9 @@ SC_MODULE(Rom)
         }
     }
 
-    void load_prog(std::vector<unsigned> prog)
+    void load_prog(std::vector<unsigned short> prog)
     {
-        for (unsigned i = 0; i < prog.size(); i++)
+        for (unsigned short i = 0; i < prog.size(); i++)
         {
             memory[i] = prog[i];
         }
