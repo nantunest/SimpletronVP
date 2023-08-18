@@ -90,7 +90,6 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool> timer_ce;
     sc_signal<bool> pwm_ce;
     sc_signal<bool> spi_ce;
-
     sc_signal<short> gpio_output;
     sc_signal<bool> timer_tick;
     sc_signal<short> timer_counter;
@@ -98,12 +97,7 @@ int sc_main(int argc, char* argv[]) {
 
     sc_signal<bool> miso;
     sc_signal<bool> mosi;
-    sc_clock sclk;
     sc_signal<bool> ss;
-
-    sc_signal<short> spi_prescalar;
-    sc_signal<bool> spi_prescalar_ce;
-    sc_signal<bool> spi_sclk;
 
     // Open VCD file
     sc_trace_file *wf = sc_create_vcd_trace_file("sim_out");
@@ -122,11 +116,7 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, pwm_out, "sys.pwm_out");
     sc_trace(wf, miso, "sys.miso");
     sc_trace(wf, mosi, "sys.mosi");
-    sc_trace(wf, sclk, "sys.sclk");
     sc_trace(wf, ss, "sys.ss");
-    sc_trace(wf, spi_prescalar, "sys.spi_prescalar");
-    sc_trace(wf, spi_prescalar_ce, "sys.spi_prescalar_ce");
-    sc_trace(wf, spi_sclk, "sys.spi_sclk");
 
     MemoryMux memoryMux("mmux");
     memoryMux.address(address);
@@ -167,16 +157,7 @@ int sc_main(int argc, char* argv[]) {
     spi.ce(spi_ce);
     spi.miso(miso);
     spi.mosi(mosi);
-    spi.sclk(spi_sclk);
     spi.ss(ss);
-    spi.prescalar_reg(spi_prescalar);
-    spi.prescalar_ce(spi_prescalar_ce);
-
-    PrescalarSpi prescalar_spi("prescalar1");
-    prescalar_spi.clk(clk);
-    prescalar_spi.ce(spi_prescalar_ce);
-    prescalar_spi.prescalar(spi_prescalar);
-    prescalar_spi.sclk(spi_sclk);
 
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
@@ -210,8 +191,8 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, timer.reg_countval, "timer.reg_countval");
     sc_trace(wf, timer.reg_status, "timer.reg_status");
 
-    sc_trace(wf, spi.sclk, "spi.sclk");
-    sc_trace(wf, spi.sclk, "spi.sclk");
+//    sc_trace(wf, spi.sclk, "spi.sclk");
+//    sc_trace(wf, spi.sclk, "spi.sclk");
 
     std::cout << "Starting simulation" << std::endl;
 

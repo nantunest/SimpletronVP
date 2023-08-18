@@ -1,8 +1,9 @@
 #pragma once
+#include <cstdio>
 #include <systemc.h>
 #include <array>
 
-SC_MODULE(PrescalarSpi)
+SC_MODULE(SpiPrescalar)
 {
     sc_in<bool> clk;
     sc_in<bool> ce;
@@ -24,7 +25,7 @@ SC_MODULE(PrescalarSpi)
         }
     }
     
-    SC_CTOR(PrescalarSpi)
+    SC_CTOR(SpiPrescalar)
     {
         SC_METHOD(update);
         sensitive << clk.neg();
@@ -32,8 +33,70 @@ SC_MODULE(PrescalarSpi)
 };
 
 
+SC_MODULE(SpiShifter)
+{
+    sc_in<bool> sclk;
+    sc_in<bool> ce;
+    sc_in<short> wshift;
+    sc_out<short> rshift;
+
+    sc_in<bool> miso;
+    sc_out<bool> mosi;
+
+    sc_out<bool> busy;
+
+    short shift_counter = 0;
+    short shift_reg;
+    sc_signal<bool> _miso;
+
+    void update()
+    {
+        if (ce)
+        {
+            if (sclk)
+            {
+                // Setting value to shift
+                if (busy == false) // ce ^ sclk ^ !busy
+                {
+                   shift_reg = wshift; 
+                   busy = true;
+                }
+                else if (shift_counter >= 16) // ce ^ clk ^ !busy ^ sc == 16
+                {
+                    rshift = shift_reg;
+                    shift_counter = 0;
+                    busy = false;
+                }
+                else // ce ^ clk ^ busy ^ sc < 16 
+                {
+                    mosi = static_cast<bool>(shift_reg & 0x01);
+                    shift_reg >>= 1;
+                    shift_reg |= static_cast<short>(_miso) << 15;
+                    shift_counter++;
+                }
+            }
+            else if (busy && shift_counter < 16)
+                // ce ^ !sclk ^ busy ^ sc < 16
+            {
+                _miso = miso; 
+            }
+        } 
+    }
+
+    SC_CTOR(SpiShifter)
+    {
+        SC_METHOD(update);
+        sensitive << sclk;
+
+        busy = false;
+    }
+};
+
+
 SC_MODULE(Spi)
 {
+    // External signals
+
     sc_in<short> address;
     sc_inout<short> data;
     sc_in<bool> clk;
@@ -42,11 +105,22 @@ SC_MODULE(Spi)
     sc_in<bool> miso;
     sc_out<bool> mosi;
     sc_out<bool> ss;
-
     sc_in<bool> sclk;
 
-    sc_out<short> prescalar_reg;
-    sc_out<bool> prescalar_ce;
+    // Internal signals
+
+    sc_signal<bool> _sclk;
+    
+    SpiPrescalar prescalar;
+    sc_signal<short> prescalar_val;
+    sc_signal<bool> prescalar_ce;
+ 
+    SpiShifter shifter;
+    sc_signal<bool> shifter_ce;
+    sc_signal<short> shifter_wshift;
+    sc_signal<short> shifter_rshift;
+    sc_signal<bool> shifter_busy;
+
 
     enum RegisterAddr {
         STATE = 0x00,       // R    {OFF = 0x00, READY = 0x01, SHIFTING = 0x02, DONE = 0x03}
@@ -83,23 +157,6 @@ SC_MODULE(Spi)
         std::cout << "[SPI]: Register ps is " << register_bank[RegisterAddr::PRESCALAR] << std::endl;
         std::cout << "[SPI]: Register cmd is " << register_bank[RegisterAddr::COMMAND] << std::endl;
 
-
-        if (clk.posedge()){
-            std::cout << "$#$#$#$#$#$#$# CLK POS EDGE" << std::endl;
-        }
-        else if (clk.negedge())
-        {
-            std::cout << "%$%$%$%$%$%$%$%$ CLK NEG EDGE" << std::endl;
-        }
-
-        if (sclk.posedge()){
-            std::cout << "$#$#$#$#$#$#$# SSSSSSCLK POS EDGE" << std::endl;
-        }
-        else if (sclk.negedge())
-        {
-            std::cout << "%$%$%$%$%$%$%$%$ SSSSSCLK NEG EDGE" << std::endl;
-        }
-
         ss = false;
 
         switch (register_bank[RegisterAddr::STATE])
@@ -119,39 +176,28 @@ SC_MODULE(Spi)
 
             case State::READY:
                 std::cout << "Ready" << std::endl;
-                prescalar_reg = register_bank[RegisterAddr::PRESCALAR]; 
+
+                prescalar_val = register_bank[RegisterAddr::PRESCALAR]; 
                 prescalar_ce = true;
+                shifter_ce = true;
+                shifter_wshift = register_bank[RegisterAddr::SHIFT];
+
                 register_bank[RegisterAddr::STATE] = State::SHIFTING;
 
             break;
             
             case State::SHIFTING:
                 std::cout << "Shifting" << std::endl;
+                if (!shifter_busy)
+                {
+                    register_bank[RegisterAddr::SHIFT] = shifter_rshift;
+                    prescalar_ce = false;
+                    shifter_ce = false;
 
-                if (sclk.posedge())
-                {
-                    // shift
-                    std::cout << "####################$$#$# pos" << std::endl;
-                    if (shift_counter < 16)
-                    {
-                        mosi = static_cast<bool>(register_bank[RegisterAddr::SHIFT] & 0x01);
-                        register_bank[RegisterAddr::SHIFT] >>= 1;
-                        register_bank[RegisterAddr::SHIFT] |= static_cast<short>(_miso) << 15;
-                        shift_counter++;
-                    }
-                    else
-                    {
-                        shift_counter = 0;
-                        register_bank[RegisterAddr::STATE] = State::DONE;
-                    }
+                    register_bank[RegisterAddr::STATE] = State::DONE;
                 }
-                else if (sclk.negedge())
-                {
-                    // sample
-                    std::cout << "#############$$#$# neg" << std::endl;
-                    _miso = miso;
-                }
-            break;
+
+           break;
 
             case State::DONE:
                 std::cout << "Done" << std::endl;
@@ -163,10 +209,24 @@ SC_MODULE(Spi)
         }
     }
 
-    SC_CTOR(Spi)
+    SC_CTOR(Spi) : prescalar("prescalar1"), shifter("shifter")
     {
         SC_METHOD(update);
         sensitive << clk.neg();
+
+        prescalar.clk(clk);
+        prescalar.ce(prescalar_ce);
+        prescalar.prescalar(prescalar_val);
+        prescalar.sclk(_sclk);
+
+        shifter.sclk(_sclk);
+        shifter.ce(shifter_ce);
+        shifter.wshift(shifter_wshift);
+        shifter.rshift(shifter_rshift);
+        shifter.busy(shifter_busy);
+        shifter.miso(miso);
+        shifter.mosi(mosi);
+
     }
 
 };
