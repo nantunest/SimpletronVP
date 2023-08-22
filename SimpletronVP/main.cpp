@@ -98,6 +98,7 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool> miso;
     sc_signal<bool> mosi;
     sc_signal<bool> ss;
+    sc_signal<bool> sclk;
 
     // Open VCD file
     sc_trace_file *wf = sc_create_vcd_trace_file("sim_out");
@@ -117,6 +118,7 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, miso, "sys.miso");
     sc_trace(wf, mosi, "sys.mosi");
     sc_trace(wf, ss, "sys.ss");
+    sc_trace(wf, sclk, "sys.sclk");
 
     MemoryMux memoryMux("mmux");
     memoryMux.address(address);
@@ -158,6 +160,7 @@ int sc_main(int argc, char* argv[]) {
     spi.miso(miso);
     spi.mosi(mosi);
     spi.ss(ss);
+    spi.sclk(sclk);
 
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
@@ -191,12 +194,21 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, timer.reg_countval, "timer.reg_countval");
     sc_trace(wf, timer.reg_status, "timer.reg_status");
 
-//    sc_trace(wf, spi.sclk, "spi.sclk");
-//    sc_trace(wf, spi.sclk, "spi.sclk");
+    sc_trace(wf, spi.prescalar_ce, "spi.prescalar_ce");
+    sc_trace(wf, spi.shifter_ce, "spi.shifter_ce");
+    sc_trace(wf, spi.prescalar.prescalar, "spi.prescalar.prescalar");
+    sc_trace(wf, spi.prescalar.sclk, "spi.prescalar.sclk");
+    sc_trace(wf, spi.shifter.sclk, "spi.shifter.sclk");
+    sc_trace(wf, spi.shifter.mosi, "spi.shifter.mosi");
+    sc_trace(wf, spi.shifter.miso, "spi.shifter.miso");
+    sc_trace(wf, spi.shifter.shift_reg, "spi.shifter.shift_reg");
+    sc_trace(wf, spi.shifter.shift_counter, "spi.shifter.shift_counter");
+    sc_trace(wf, spi.shifter.wshift, "spi.shifter.wshift");
+    sc_trace(wf, spi.shifter.busy, "spi.shifter.busy");
 
     std::cout << "Starting simulation" << std::endl;
 
-    sc_core::sc_start(1000, sc_core::SC_US);
+    sc_core::sc_start(2000, sc_core::SC_US);
 
 
     std::cout << "End of Simulation." << std::endl;
