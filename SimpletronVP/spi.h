@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdio>
 #include <systemc.h>
 #include <array>
 
@@ -7,10 +6,10 @@ SC_MODULE(SpiPrescalar)
 {
     sc_in<bool> clk;
     sc_in<bool> ce;
-    sc_in<short> prescalar;
+    sc_in<unsigned short> prescalar;
     sc_out<bool> sclk;
 
-    short clk_cnt = 0;
+    unsigned short clk_cnt = 0;
 
     void update()
     {
@@ -22,6 +21,10 @@ SC_MODULE(SpiPrescalar)
                 clk_cnt = 0;
                 sclk = !sclk;
             }
+        }
+        else
+        {
+            sclk = true;
         }
     }
     
@@ -38,15 +41,15 @@ SC_MODULE(SpiShifter)
     sc_out<bool> busy;
     sc_in<bool> sclk;
     sc_in<bool> ce;
-    sc_in<short> wshift;
+    sc_in<unsigned short> wshift;
     sc_in<bool> miso;
-    sc_out<short> rshift;
+    sc_out<unsigned short> rshift;
     sc_out<bool> mosi;
 
-    short shift_counter = 0;
-    short shift_reg;
+    unsigned short shift_counter = 0;
+    unsigned short shift_reg;
 
-    sc_signal<bool> _miso;
+    bool _miso;
 
     void update()
     {
@@ -61,22 +64,26 @@ SC_MODULE(SpiShifter)
             else if (sclk)
             {
 
-                if (shift_counter >= 16) // ce ^ clk ^ !busy ^ sc == 16
+                if (shift_counter >= 16) // ce ^ clk ^ !busy ^ sc >= 16
                 {
+                    mosi = static_cast<bool>(shift_reg & 0x01);
+                    shift_reg >>= 1;
+                    shift_reg |= static_cast<unsigned short>(_miso) << 15;
+
                     rshift = shift_reg;
                     shift_counter = 0;
                     busy = false;
+
                 }
                 else // ce ^ clk ^ busy ^ sc < 16 
                 {
                     mosi = static_cast<bool>(shift_reg & 0x01);
                     shift_reg >>= 1;
-                    shift_reg |= static_cast<short>(_miso) << 15;
+                    shift_reg |= static_cast<unsigned short>(_miso) << 15;
                     shift_counter++;
                 }
             }
-            else if (busy && shift_counter < 16)
-                // ce ^ !sclk ^ busy ^ sc < 16
+            else if (shift_counter <= 16)
             {
                 _miso = miso; 
             }
@@ -95,28 +102,26 @@ SC_MODULE(Spi)
 {
     // External signals
 
-    sc_in<short> address;
-    sc_inout<short> data;
+    sc_in<unsigned short> address;
+    sc_inout<unsigned short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
 
     sc_in<bool> miso;
     sc_out<bool> mosi;
     sc_out<bool> ss;
-    sc_in<bool> sclk;
+    sc_out<bool> sclk;
 
     // Internal signals
 
-    sc_signal<bool> _sclk;
-    
     SpiPrescalar prescalar;
-    sc_signal<short> prescalar_val;
+    sc_signal<unsigned short> prescalar_val;
     sc_signal<bool> prescalar_ce;
  
     SpiShifter shifter;
     sc_signal<bool> shifter_ce;
-    sc_signal<short> shifter_wshift;
-    sc_signal<short> shifter_rshift;
+    sc_signal<unsigned short> shifter_wshift;
+    sc_signal<unsigned short> shifter_rshift;
     sc_signal<bool> shifter_busy;
 
 
@@ -140,16 +145,14 @@ SC_MODULE(Spi)
         TRANSFER = 0x01
     };
     
-    static constexpr short base_address = MemoryMux::spi_addr;
-    std::array<short, RegisterAddr::SIZE> register_bank = {0, 1, 0, 0}; // Prescalar default is 1
+    static constexpr unsigned short base_address = MemoryMux::spi_addr;
+    std::array<unsigned short, RegisterAddr::SIZE> register_bank = {0, 1, 0, 0}; // Prescalar default is 1
 
-    short shift_counter = 0;
-    bool _miso = false;
+    unsigned short shift_counter = 0;
 
     void update()
     {
-        const short reg_addr = address - base_address; 
-        ss = false;
+        const unsigned short reg_addr = address - base_address; 
 
         switch (register_bank[RegisterAddr::STATE])
         {
@@ -157,12 +160,6 @@ SC_MODULE(Spi)
                 std::cout << "[SPI]: Conf" << std::endl;
                 if (ce && reg_addr < RegisterAddr::SIZE) // Configuration
                 {
-                    std::cout << "[SPI]: address is " << address << std::endl;
-                    std::cout << "[SPI]: reg_addr is " << reg_addr << std::endl;
-                    std::cout << "[SPI]: Register sh is " << register_bank[RegisterAddr::SHIFT] << std::endl;
-                    std::cout << "[SPI]: Register ps is " << register_bank[RegisterAddr::PRESCALAR] << std::endl;
-
-
                     // TODO: Validate register address and RW permission
                     register_bank[reg_addr] = data;
                 }
@@ -179,6 +176,7 @@ SC_MODULE(Spi)
                 prescalar_val = register_bank[RegisterAddr::PRESCALAR]; 
                 prescalar_ce = true;
                 shifter_ce = true;
+                ss = true;
                 shifter_wshift = register_bank[RegisterAddr::SHIFT];
 
                 register_bank[RegisterAddr::STATE] = State::SHIFTING;
@@ -209,6 +207,7 @@ SC_MODULE(Spi)
                     // User-code commands acks spi DONE setting it back to READY.
                     register_bank[RegisterAddr::STATE] = State::READY;
                 }
+                ss = false;
             break;
         }
     }
@@ -221,9 +220,9 @@ SC_MODULE(Spi)
         prescalar.clk(clk);
         prescalar.ce(prescalar_ce);
         prescalar.prescalar(prescalar_val);
-        prescalar.sclk(_sclk);
+        prescalar.sclk(sclk);
 
-        shifter.sclk(_sclk);
+        shifter.sclk(sclk);
         shifter.ce(shifter_ce);
         shifter.wshift(shifter_wshift);
         shifter.rshift(shifter_rshift);

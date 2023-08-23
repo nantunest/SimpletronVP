@@ -4,25 +4,25 @@
 
 SC_MODULE(Pwm)
 {
-    sc_in<short> address;
-    sc_inout<short> data;
+    sc_in<unsigned short> address;
+    sc_inout<unsigned short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    sc_in<short> timer_counter;
+    sc_in<unsigned short> timer_counter;
 
     sc_out<bool> out;
 
-    static constexpr short base_address = MemoryMux::pwm_addr;
+    static constexpr unsigned short base_address = MemoryMux::pwm_addr;
 
-    static constexpr short status_addr = base_address + 0x00;
-    static constexpr short width_addr = base_address + 0x01;
+    static constexpr unsigned short status_addr = base_address + 0x00;
+    static constexpr unsigned short width_addr = base_address + 0x01;
 
-    short reg_status = 0;
-    short reg_width = 0;
+    unsigned short reg_status = 0;
+    unsigned short reg_width = 0;
 
     // Not addressable
-    short reg_countclk = 0;
+    unsigned short reg_countclk = 0;
 
     void update()
     {

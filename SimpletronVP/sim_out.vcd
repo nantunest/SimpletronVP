@@ -1,5 +1,5 @@
 $date
-     Aug 22, 2023       07:53:19
+     Aug 23, 2023       08:26:55
 $end
 
 $version
@@ -21,18 +21,25 @@ $scope module spi $end
 $var wire    1  aaaav  prescalar_ce       $end
 $var wire    1  aaaaw  shifter_ce       $end
 $scope module prescalar $end
-$var wire    1  aaabe  sclk       $end
-$var wire   16  aaabf  prescalar [15:0]  $end
+$var wire    1  aaabj  sclk       $end
+$var wire   16  aaabk  prescalar [15:0]  $end
 $upscope $end
 $scope module shifter $end
 $var wire   16  aaaax  shift_reg [15:0]  $end
 $var wire   16  aaaay  shift_counter [15:0]  $end
-$var wire    1  aaaaz  mosi       $end
-$var wire    1  aaaba  miso       $end
-$var wire   16  aaabb  wshift [15:0]  $end
-$var wire    1  aaabc  sclk       $end
-$var wire    1  aaabd  busy       $end
+$var wire    1  aaaaz  _miso       $end
+$var wire    1  aaabe  mosi       $end
+$var wire    1  aaabf  miso       $end
+$var wire   16  aaabg  wshift [15:0]  $end
+$var wire    1  aaabh  sclk       $end
+$var wire    1  aaabi  busy       $end
 $upscope $end
+$upscope $end
+$scope module spi_device $end
+$var wire   16  aaaba  shift_reg [15:0]  $end
+$var wire    1  aaabb  _mosi       $end
+$var wire    1  aaabc  mosi       $end
+$var wire    1  aaabd  miso       $end
 $upscope $end
 $scope module sys $end
 $var wire    1  aaaaa  clock       $end
@@ -77,7 +84,7 @@ b0 aaaag
 0aaaal
 0aaaam
 0aaaan
-0aaaao
+1aaaao
 b0 aaaap
 b0 aaaaq
 b0 aaaar
@@ -89,12 +96,17 @@ b0 aaaau
 b0 aaaax
 b0 aaaay
 0aaaaz
-0aaaba
-b0 aaabb
+b1000000000000010 aaaba
+0aaabb
 0aaabc
 0aaabd
 0aaabe
-b0 aaabf
+0aaabf
+b0 aaabg
+1aaabh
+0aaabi
+1aaabj
+b0 aaabk
 $end
 
 #10000000
@@ -115,7 +127,7 @@ b1 aaaar
 #30000000
 1aaaaa
 b10010011001 aaaab
-b1100100 aaaac
+b1000000000000001 aaaac
 1aaaad
 0aaaae
 1aaaaf
@@ -202,11 +214,11 @@ b11 aaaar
 
 #115000000
 0aaaaa
-b1100100 aaaac
+b1000000000000001 aaaac
 
 #120000000
 1aaaaa
-b1100100 aaaap
+b1000000000000001 aaaap
 
 #125000000
 0aaaaa
@@ -232,7 +244,7 @@ b100 aaaar
 #150000000
 1aaaaa
 b111100110011 aaaab
-b1100100 aaaac
+b1000000000000001 aaaac
 1aaaad
 0aaaae
 
@@ -370,12 +382,13 @@ b1001 aaaar
 
 #295000000
 0aaaaa
+1aaaan
 1aaaav
 1aaaaw
-b1100100 aaaax
-b1100100 aaabb
-1aaabd
-b100 aaabf
+b1000000000000001 aaaax
+b1000000000000001 aaabg
+1aaabi
+b100 aaabk
 
 #300000000
 1aaaaa
@@ -403,10 +416,9 @@ b1001 aaaas
 
 #335000000
 0aaaaa
-b110010 aaaax
-b1 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #340000000
 1aaaaa
@@ -434,8 +446,15 @@ b1010 aaaas
 
 #375000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaam
+1aaaao
+b100000000000000 aaaax
+b1 aaaay
+b100000000000001 aaaba
+1aaabc
+1aaabe
+1aaabh
+1aaabj
 
 #380000000
 1aaaaa
@@ -462,10 +481,10 @@ b1010 aaaas
 
 #415000000
 0aaaaa
-b11001 aaaax
-b10 aaaay
-1aaabc
-1aaabe
+0aaaao
+1aaabb
+0aaabh
+0aaabj
 
 #420000000
 1aaaaa
@@ -493,8 +512,18 @@ b1001 aaaas
 
 #455000000
 0aaaaa
+1aaaal
+0aaaam
+1aaaao
+b10000000000000 aaaax
+b10 aaaay
+b1010000000000000 aaaba
 0aaabc
+1aaabd
 0aaabe
+1aaabf
+1aaabh
+1aaabj
 
 #460000000
 1aaaaa
@@ -522,12 +551,11 @@ b1010 aaaas
 
 #495000000
 0aaaaa
-1aaaam
-b1100 aaaax
-b11 aaaay
+0aaaao
 1aaaaz
-1aaabc
-1aaabe
+0aaabb
+0aaabh
+0aaabj
 
 #500000000
 1aaaaa
@@ -554,8 +582,15 @@ b1010 aaaas
 
 #535000000
 0aaaaa
-0aaabc
-0aaabe
+0aaaal
+1aaaao
+b1001000000000000 aaaax
+b11 aaaay
+b101000000000000 aaaba
+0aaabd
+0aaabf
+1aaabh
+1aaabj
 
 #540000000
 1aaaaa
@@ -583,12 +618,10 @@ b1001 aaaas
 
 #575000000
 0aaaaa
-0aaaam
-b110 aaaax
-b100 aaaay
+0aaaao
 0aaaaz
-1aaabc
-1aaabe
+0aaabh
+0aaabj
 
 #580000000
 1aaaaa
@@ -616,8 +649,12 @@ b1010 aaaas
 
 #615000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b100100000000000 aaaax
+b100 aaaay
+b10100000000000 aaaba
+1aaabh
+1aaabj
 
 #620000000
 1aaaaa
@@ -644,10 +681,9 @@ b1010 aaaas
 
 #655000000
 0aaaaa
-b11 aaaax
-b101 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #660000000
 1aaaaa
@@ -675,8 +711,12 @@ b1001 aaaas
 
 #695000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b10010000000000 aaaax
+b101 aaaay
+b1010000000000 aaaba
+1aaabh
+1aaabj
 
 #700000000
 1aaaaa
@@ -704,12 +744,9 @@ b1010 aaaas
 
 #735000000
 0aaaaa
-1aaaam
-b1 aaaax
-b110 aaaay
-1aaaaz
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #740000000
 1aaaaa
@@ -736,8 +773,12 @@ b1010 aaaas
 
 #775000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b1001000000000 aaaax
+b110 aaaay
+b101000000000 aaaba
+1aaabh
+1aaabj
 
 #780000000
 1aaaaa
@@ -765,10 +806,9 @@ b1001 aaaas
 
 #815000000
 0aaaaa
-b0 aaaax
-b111 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #820000000
 1aaaaa
@@ -796,8 +836,12 @@ b1010 aaaas
 
 #855000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b100100000000 aaaax
+b111 aaaay
+b10100000000 aaaba
+1aaabh
+1aaabj
 
 #860000000
 1aaaaa
@@ -824,11 +868,9 @@ b1010 aaaas
 
 #895000000
 0aaaaa
-0aaaam
-b1000 aaaay
-0aaaaz
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #900000000
 1aaaaa
@@ -856,8 +898,12 @@ b1001 aaaas
 
 #935000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b10010000000 aaaax
+b1000 aaaay
+b1010000000 aaaba
+1aaabh
+1aaabj
 
 #940000000
 1aaaaa
@@ -885,9 +931,9 @@ b1010 aaaas
 
 #975000000
 0aaaaa
-b1001 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #980000000
 1aaaaa
@@ -914,8 +960,12 @@ b1010 aaaas
 
 #1015000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b1001000000 aaaax
+b1001 aaaay
+b101000000 aaaba
+1aaabh
+1aaabj
 
 #1020000000
 1aaaaa
@@ -943,9 +993,9 @@ b1001 aaaas
 
 #1055000000
 0aaaaa
-b1010 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #1060000000
 1aaaaa
@@ -973,8 +1023,12 @@ b1010 aaaas
 
 #1095000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b100100000 aaaax
+b1010 aaaay
+b10100000 aaaba
+1aaabh
+1aaabj
 
 #1100000000
 1aaaaa
@@ -1001,9 +1055,9 @@ b1010 aaaas
 
 #1135000000
 0aaaaa
-b1011 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #1140000000
 1aaaaa
@@ -1031,8 +1085,12 @@ b1001 aaaas
 
 #1175000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b10010000 aaaax
+b1011 aaaay
+b1010000 aaaba
+1aaabh
+1aaabj
 
 #1180000000
 1aaaaa
@@ -1060,9 +1118,9 @@ b1010 aaaas
 
 #1215000000
 0aaaaa
-b1100 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #1220000000
 1aaaaa
@@ -1089,8 +1147,12 @@ b1010 aaaas
 
 #1255000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b1001000 aaaax
+b1100 aaaay
+b101000 aaaba
+1aaabh
+1aaabj
 
 #1260000000
 1aaaaa
@@ -1118,9 +1180,9 @@ b1001 aaaas
 
 #1295000000
 0aaaaa
-b1101 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #1300000000
 1aaaaa
@@ -1148,8 +1210,12 @@ b1010 aaaas
 
 #1335000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b100100 aaaax
+b1101 aaaay
+b10100 aaaba
+1aaabh
+1aaabj
 
 #1340000000
 1aaaaa
@@ -1176,9 +1242,9 @@ b1010 aaaas
 
 #1375000000
 0aaaaa
-b1110 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #1380000000
 1aaaaa
@@ -1206,8 +1272,12 @@ b1001 aaaas
 
 #1415000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b10010 aaaax
+b1110 aaaay
+b1010 aaaba
+1aaabh
+1aaabj
 
 #1420000000
 1aaaaa
@@ -1235,9 +1305,9 @@ b1010 aaaas
 
 #1455000000
 0aaaaa
-b1111 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #1460000000
 1aaaaa
@@ -1264,8 +1334,12 @@ b1010 aaaas
 
 #1495000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaao
+b1001 aaaax
+b1111 aaaay
+b101 aaaba
+1aaabh
+1aaabj
 
 #1500000000
 1aaaaa
@@ -1293,9 +1367,9 @@ b1001 aaaas
 
 #1535000000
 0aaaaa
-b10000 aaaay
-1aaabc
-1aaabe
+0aaaao
+0aaabh
+0aaabj
 
 #1540000000
 1aaaaa
@@ -1323,8 +1397,18 @@ b1010 aaaas
 
 #1575000000
 0aaaaa
-0aaabc
-0aaabe
+1aaaal
+1aaaam
+1aaaao
+b100 aaaax
+b10000 aaaay
+b10 aaaba
+1aaabc
+1aaabd
+1aaabe
+1aaabf
+1aaabh
+1aaabj
 
 #1580000000
 1aaaaa
@@ -1351,10 +1435,11 @@ b1010 aaaas
 
 #1615000000
 0aaaaa
-b0 aaaay
-1aaabc
-0aaabd
-1aaabe
+0aaaao
+1aaaaz
+1aaabb
+0aaabh
+0aaabj
 
 #1620000000
 1aaaaa
@@ -1362,8 +1447,6 @@ b1001 aaaas
 
 #1625000000
 0aaaaa
-0aaaav
-0aaaaw
 
 #1630000000
 1aaaaa
@@ -1384,6 +1467,19 @@ b1001 aaaas
 
 #1655000000
 0aaaaa
+0aaaal
+0aaaam
+1aaaao
+b1000000000000010 aaaax
+b0 aaaay
+b1000000000000001 aaaba
+0aaabc
+0aaabd
+0aaabe
+0aaabf
+1aaabh
+0aaabi
+1aaabj
 
 #1660000000
 1aaaaa
@@ -1391,12 +1487,15 @@ b1010 aaaas
 
 #1665000000
 0aaaaa
+0aaaav
+0aaaaw
 
 #1670000000
 1aaaaa
 
 #1675000000
 0aaaaa
+0aaaan
 
 #1680000000
 1aaaaa

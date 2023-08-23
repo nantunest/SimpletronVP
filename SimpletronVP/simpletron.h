@@ -4,12 +4,12 @@
 SC_MODULE(Simpletron)
 {
     sc_in<bool> clk;
-    sc_out<short> address;
-    sc_inout<short> data;
+    sc_out<unsigned short> address;
+    sc_inout<unsigned short> data;
     sc_out<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
     
-    short i_address = 0;
-    short i_data = 0;
+    unsigned short i_address = 0;
+    unsigned short i_data = 0;
     bool i_ram_rw = false;
 
     enum State {FETCH, DECODE, EXEC, WRITE_BACK};
@@ -29,15 +29,15 @@ SC_MODULE(Simpletron)
                   HALT      = 0x0C
                  };
 
-    short accumulator = 0;
-    short fetch_pointer = 0;
+    unsigned short accumulator = 0;
+    unsigned short fetch_pointer = 0;
     bool initialized = false;
     bool executing = true;
-    short instruction_pointer = 0;
+    unsigned short instruction_pointer = 0;
 
-    short opcode;
-    short operand_addr;
-    short operand_data;
+    unsigned short opcode;
+    unsigned short operand_addr;
+    unsigned short operand_data;
 
 
     void load()
@@ -56,7 +56,7 @@ SC_MODULE(Simpletron)
     void halt()
     {
         std::cout << "EXECUTING HALT" << std::endl;
-        short stop;
+        unsigned short stop;
         executing = false; 
         std::cin >> stop;
     }
@@ -72,7 +72,7 @@ SC_MODULE(Simpletron)
     void sub()
     {
         std::cout << "EXECUTING SUB: " << accumulator << " - " << operand_data << std::endl;
-        accumulator -= static_cast<short>(data);
+        accumulator -= static_cast<unsigned short>(data);
     }
 
 
@@ -131,7 +131,7 @@ SC_MODULE(Simpletron)
 
     void read()
     { 
-        short data_out;
+        unsigned short data_out;
         std::cout << "EXECUTING READ" << std::endl;
         std::cout << " ### CONSOLE: ";
         std::cin >> data_out;
@@ -212,7 +212,7 @@ SC_MODULE(Simpletron)
    
     void run()
     {
-        short cycle = 0;
+        unsigned short cycle = 0;
         
         while(true){
            

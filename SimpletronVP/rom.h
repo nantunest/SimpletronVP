@@ -4,13 +4,13 @@
 
 SC_MODULE(Rom)
 {
-    sc_in<short> address;
-    sc_out<short> data;
+    sc_in<unsigned short> address;
+    sc_out<unsigned short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    static constexpr short base_address = MemoryMux::rom_addr;
-    static constexpr short size = MemoryMux::rom_size;
+    static constexpr unsigned short base_address = MemoryMux::rom_addr;
+    static constexpr unsigned short size = MemoryMux::rom_size;
 
     unsigned short memory[size];
 

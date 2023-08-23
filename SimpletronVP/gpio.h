@@ -4,11 +4,11 @@
 
 SC_MODULE(Gpio)
 {
-    sc_in<short> address;
-    sc_in<short> data;
+    sc_in<unsigned short> address;
+    sc_in<unsigned short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
-    sc_out<short> output_pins;
+    sc_out<unsigned short> output_pins;
 
     void update()
     {

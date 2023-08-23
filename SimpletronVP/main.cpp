@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "pwm.h"
 #include "spi.h"
+#include "spi_device.h"
 
 #include "simpletron.h"
 
@@ -80,8 +81,8 @@ std::vector<unsigned short> prog4 = {
 int sc_main(int argc, char* argv[]) {
    
     sc_clock clk("clock", 10, sc_core::SC_US, 0.5, 10, sc_core::SC_US);
-    sc_signal<short> address;
-    sc_signal<short, SC_MANY_WRITERS> data;
+    sc_signal<unsigned short> address;
+    sc_signal<unsigned short, SC_MANY_WRITERS> data;
     sc_signal<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
 
     sc_signal<bool> ram_ce;
@@ -90,9 +91,9 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool> timer_ce;
     sc_signal<bool> pwm_ce;
     sc_signal<bool> spi_ce;
-    sc_signal<short> gpio_output;
+    sc_signal<unsigned short> gpio_output;
     sc_signal<bool> timer_tick;
-    sc_signal<short> timer_counter;
+    sc_signal<unsigned short> timer_counter;
     sc_signal<bool> pwm_out;
 
     sc_signal<bool> miso;
@@ -162,6 +163,12 @@ int sc_main(int argc, char* argv[]) {
     spi.ss(ss);
     spi.sclk(sclk);
 
+    SpiDevice spi_device("spidev1");
+    spi_device.ce(ss);
+    spi_device.sclk(sclk);
+    spi_device.miso(miso);
+    spi_device.mosi(mosi);
+
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
     simpletron.address(address);
@@ -205,6 +212,12 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, spi.shifter.shift_counter, "spi.shifter.shift_counter");
     sc_trace(wf, spi.shifter.wshift, "spi.shifter.wshift");
     sc_trace(wf, spi.shifter.busy, "spi.shifter.busy");
+    sc_trace(wf, spi.shifter._miso, "spi.shifter._miso");
+
+    sc_trace(wf, spi_device.shift_reg, "spi_device.shift_reg");
+    sc_trace(wf, spi_device.miso, "spi_device.miso");
+    sc_trace(wf, spi_device.mosi, "spi_device.mosi");
+    sc_trace(wf, spi_device._mosi, "spi_device._mosi");
 
     std::cout << "Starting simulation" << std::endl;
 

@@ -4,16 +4,16 @@
 
 SC_MODULE(Ram)
 {
-    static constexpr short base_address = MemoryMux::ram_addr;
-    static constexpr short size = MemoryMux::ram_size;
+    static constexpr unsigned short base_address = MemoryMux::ram_addr;
+    static constexpr unsigned short size = MemoryMux::ram_size;
 
-    sc_in<short> address;
-    sc_inout<short> data;
+    sc_in<unsigned short> address;
+    sc_inout<unsigned short> data;
     sc_in<bool> write_enable; // WE = 0 -> Read, WE = 1 -> Write
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    short memory[size];
+    unsigned short memory[size];
 
     void read_write()
     {

@@ -3,7 +3,7 @@
 
 SC_MODULE(MemoryMux)
 {
-    sc_in<short> address;
+    sc_in<unsigned short> address;
     sc_out<bool> rom_ce;
     sc_out<bool> ram_ce;
     sc_out<bool> gpio_ce;
@@ -11,25 +11,25 @@ SC_MODULE(MemoryMux)
     sc_out<bool> pwm_ce;
     sc_out<bool> spi_ce;
 
-    static constexpr short rom_addr = 0x000;
-    static constexpr short rom_size = 0x400;
-    static constexpr short ram_addr = 0x400;
-    static constexpr short ram_size = 0xB00;
-    static constexpr short gpio_addr = 0xF00;
-    static constexpr short gpio_size = 0x010;
-    static constexpr short timer_addr = 0xF10;
-    static constexpr short timer_size = 0x010;
-    static constexpr short pwm_addr = 0xF20;
-    static constexpr short pwm_size = 0x010;
-    static constexpr short spi_addr = 0xF30;
-    static constexpr short spi_size = 0x010;
+    static constexpr unsigned short rom_addr = 0x000;
+    static constexpr unsigned short rom_size = 0x400;
+    static constexpr unsigned short ram_addr = 0x400;
+    static constexpr unsigned short ram_size = 0xB00;
+    static constexpr unsigned short gpio_addr = 0xF00;
+    static constexpr unsigned short gpio_size = 0x010;
+    static constexpr unsigned short timer_addr = 0xF10;
+    static constexpr unsigned short timer_size = 0x010;
+    static constexpr unsigned short pwm_addr = 0xF20;
+    static constexpr unsigned short pwm_size = 0x010;
+    static constexpr unsigned short spi_addr = 0xF30;
+    static constexpr unsigned short spi_size = 0x010;
 
-    static constexpr short ram_addr_end = ram_addr + ram_size;
-    static constexpr short rom_addr_end = rom_addr + rom_size;
-    static constexpr short gpio_addr_end = gpio_addr + gpio_size;
-    static constexpr short timer_addr_end = timer_addr + timer_size;
-    static constexpr short pwm_addr_end = pwm_addr + pwm_size;
-    static constexpr short spi_addr_end = spi_addr + spi_size;
+    static constexpr unsigned short ram_addr_end = ram_addr + ram_size;
+    static constexpr unsigned short rom_addr_end = rom_addr + rom_size;
+    static constexpr unsigned short gpio_addr_end = gpio_addr + gpio_size;
+    static constexpr unsigned short timer_addr_end = timer_addr + timer_size;
+    static constexpr unsigned short pwm_addr_end = pwm_addr + pwm_size;
+    static constexpr unsigned short spi_addr_end = spi_addr + spi_size;
 
     void update()
     {
