@@ -1,5 +1,5 @@
 $date
-     Aug 23, 2023       08:26:55
+     Aug 26, 2023       21:32:17
 $end
 
 $version
@@ -127,7 +127,7 @@ b1 aaaar
 #30000000
 1aaaaa
 b10010011001 aaaab
-b1000000000000001 aaaac
+b111 aaaac
 1aaaad
 0aaaae
 1aaaaf
@@ -214,11 +214,11 @@ b11 aaaar
 
 #115000000
 0aaaaa
-b1000000000000001 aaaac
+b111 aaaac
 
 #120000000
 1aaaaa
-b1000000000000001 aaaap
+b111 aaaap
 
 #125000000
 0aaaaa
@@ -244,7 +244,7 @@ b100 aaaar
 #150000000
 1aaaaa
 b111100110011 aaaab
-b1000000000000001 aaaac
+b111 aaaac
 1aaaad
 0aaaae
 
@@ -385,8 +385,8 @@ b1001 aaaar
 1aaaan
 1aaaav
 1aaaaw
-b1000000000000001 aaaax
-b1000000000000001 aaabg
+b111 aaaax
+b111 aaabg
 1aaabi
 b100 aaabk
 
@@ -448,7 +448,7 @@ b1010 aaaas
 0aaaaa
 1aaaam
 1aaaao
-b100000000000000 aaaax
+b11 aaaax
 b1 aaaay
 b100000000000001 aaaba
 1aaabc
@@ -513,14 +513,11 @@ b1001 aaaas
 #455000000
 0aaaaa
 1aaaal
-0aaaam
 1aaaao
-b10000000000000 aaaax
+b1 aaaax
 b10 aaaay
 b1010000000000000 aaaba
-0aaabc
 1aaabd
-0aaabe
 1aaabf
 1aaabh
 1aaabj
@@ -553,7 +550,6 @@ b1010 aaaas
 0aaaaa
 0aaaao
 1aaaaz
-0aaabb
 0aaabh
 0aaabj
 
@@ -584,9 +580,9 @@ b1010 aaaas
 0aaaaa
 0aaaal
 1aaaao
-b1001000000000000 aaaax
+b1000000000000000 aaaax
 b11 aaaay
-b101000000000000 aaaba
+b1101000000000000 aaaba
 0aaabd
 0aaabf
 1aaabh
@@ -649,10 +645,13 @@ b1010 aaaas
 
 #615000000
 0aaaaa
+0aaaam
 1aaaao
-b100100000000000 aaaax
+b100000000000000 aaaax
 b100 aaaay
-b10100000000000 aaaba
+b1110100000000000 aaaba
+0aaabc
+0aaabe
 1aaabh
 1aaabj
 
@@ -682,6 +681,7 @@ b1010 aaaas
 #655000000
 0aaaaa
 0aaaao
+0aaabb
 0aaabh
 0aaabj
 
@@ -712,9 +712,9 @@ b1001 aaaas
 #695000000
 0aaaaa
 1aaaao
-b10010000000000 aaaax
+b10000000000000 aaaax
 b101 aaaay
-b1010000000000 aaaba
+b111010000000000 aaaba
 1aaabh
 1aaabj
 
@@ -774,9 +774,9 @@ b1010 aaaas
 #775000000
 0aaaaa
 1aaaao
-b1001000000000 aaaax
+b1000000000000 aaaax
 b110 aaaay
-b101000000000 aaaba
+b11101000000000 aaaba
 1aaabh
 1aaabj
 
@@ -837,9 +837,9 @@ b1010 aaaas
 #855000000
 0aaaaa
 1aaaao
-b100100000000 aaaax
+b100000000000 aaaax
 b111 aaaay
-b10100000000 aaaba
+b1110100000000 aaaba
 1aaabh
 1aaabj
 
@@ -899,9 +899,9 @@ b1001 aaaas
 #935000000
 0aaaaa
 1aaaao
-b10010000000 aaaax
+b10000000000 aaaax
 b1000 aaaay
-b1010000000 aaaba
+b111010000000 aaaba
 1aaabh
 1aaabj
 
@@ -961,9 +961,9 @@ b1010 aaaas
 #1015000000
 0aaaaa
 1aaaao
-b1001000000 aaaax
+b1000000000 aaaax
 b1001 aaaay
-b101000000 aaaba
+b11101000000 aaaba
 1aaabh
 1aaabj
 
@@ -1024,9 +1024,9 @@ b1010 aaaas
 #1095000000
 0aaaaa
 1aaaao
-b100100000 aaaax
+b100000000 aaaax
 b1010 aaaay
-b10100000 aaaba
+b1110100000 aaaba
 1aaabh
 1aaabj
 
@@ -1086,9 +1086,9 @@ b1001 aaaas
 #1175000000
 0aaaaa
 1aaaao
-b10010000 aaaax
+b10000000 aaaax
 b1011 aaaay
-b1010000 aaaba
+b111010000 aaaba
 1aaabh
 1aaabj
 
@@ -1148,9 +1148,9 @@ b1010 aaaas
 #1255000000
 0aaaaa
 1aaaao
-b1001000 aaaax
+b1000000 aaaax
 b1100 aaaay
-b101000 aaaba
+b11101000 aaaba
 1aaabh
 1aaabj
 
@@ -1211,9 +1211,9 @@ b1010 aaaas
 #1335000000
 0aaaaa
 1aaaao
-b100100 aaaax
+b100000 aaaax
 b1101 aaaay
-b10100 aaaba
+b1110100 aaaba
 1aaabh
 1aaabj
 
@@ -1273,9 +1273,9 @@ b1001 aaaas
 #1415000000
 0aaaaa
 1aaaao
-b10010 aaaax
+b10000 aaaax
 b1110 aaaay
-b1010 aaaba
+b111010 aaaba
 1aaabh
 1aaabj
 
@@ -1335,9 +1335,9 @@ b1010 aaaas
 #1495000000
 0aaaaa
 1aaaao
-b1001 aaaax
+b1000 aaaax
 b1111 aaaay
-b101 aaaba
+b11101 aaaba
 1aaabh
 1aaabj
 
@@ -1398,14 +1398,11 @@ b1010 aaaas
 #1575000000
 0aaaaa
 1aaaal
-1aaaam
 1aaaao
 b100 aaaax
 b10000 aaaay
-b10 aaaba
-1aaabc
+b1110 aaaba
 1aaabd
-1aaabe
 1aaabf
 1aaabh
 1aaabj
@@ -1437,7 +1434,6 @@ b1010 aaaas
 0aaaaa
 0aaaao
 1aaaaz
-1aaabb
 0aaabh
 0aaabj
 
@@ -1468,14 +1464,11 @@ b1001 aaaas
 #1655000000
 0aaaaa
 0aaaal
-0aaaam
 1aaaao
 b1000000000000010 aaaax
 b0 aaaay
-b1000000000000001 aaaba
-0aaabc
+b111 aaaba
 0aaabd
-0aaabe
 0aaabf
 1aaabh
 0aaabi
