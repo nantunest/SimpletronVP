@@ -36,9 +36,9 @@ program = [
     Line ""         READ var_n2,
     Line ""         LOAD var_n1,
     Line ""         SUB var_n2,
-    Line ""         BLZ (toLabel "n2w"),
+    Line ""         BLZ $ toLabel "n2w",
     Line ""         WRITE var_n1,
-    Line ""         JMP (toLabel "end"),
+    Line ""         JMP $ toLabel "end",
     Line "n2w"      WRITE var_n2,
     Line "end"      HALT 0
     ]
