@@ -9,8 +9,6 @@ data Instruction = READ | WRITE | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | B
 data Line = Line String Instruction Word16
             deriving (Show)
 
-data ASMKEYS = InProg
-
 labelAddress label (line:progs) idx
     | labelIn line == label = idx
     | otherwise = labelAddress label progs (idx + 1)
@@ -25,7 +23,7 @@ writeProgToFile :: [Line] -> FilePath -> IO ()
 writeProgToFile p f = B.writeFile f $ runPut $ mapM_ putWord16le (assemble p) where
     assemble = map assembleLine
 
-toLabel l InProg p = labelAddress l p 0
+toLabel l = labelAddress l program 0
 
 ---- Assembly Program Begin ----
 
@@ -38,9 +36,9 @@ program = [
     Line ""         READ var_n2,
     Line ""         LOAD var_n1,
     Line ""         SUB var_n2,
-    Line ""         BLZ (toLabel "n2w" InProg program),
+    Line ""         BLZ (toLabel "n2w"),
     Line ""         WRITE var_n1,
-    Line ""         JMP (toLabel "end" InProg program),
+    Line ""         JMP (toLabel "end"),
     Line "n2w"      WRITE var_n2,
     Line "end"      HALT 0
     ]
