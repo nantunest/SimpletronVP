@@ -2,7 +2,7 @@ import Text.Printf
 import Data.Bits ( Bits(shiftR, shiftL, (.|.), (.&.)) )
 import Data.Binary ( Word16, encode )
 import qualified Data.ByteString.Lazy as B
-import GHC.Builtin.PrimOps (PrimOp(Word16AddOp))
+import Data.Binary.Put (runPut, putWord16le)
 
 data Instruction = READ | WRITE | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BLZ | BEZ | HALT
                   deriving (Enum, Show, Eq)
@@ -10,7 +10,7 @@ data Instruction = READ | WRITE | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | B
 data Label = Label String Int
             deriving (Show)
 
-data Line = Line String Instruction Int
+data Line = Line String Instruction Word16
             deriving (Show)
 
 data ASMKEYS = InProg
@@ -25,8 +25,8 @@ data ASMKEYS = InProg
 --line :: Int -> Instruction -> Int -> String -> (Int, Instruction, Int, String)
 --line n i o l = (n, i, o, l)
 
-instToOpCode :: Instruction -> Int
-instToOpCode i = fromEnum i + 1
+instToOpCode :: Instruction -> Word16
+instToOpCode i = fromIntegral (fromEnum i + 1) :: Word16
 
 labelIn (Line l _ _) = l
 addressIn (Label _ a) = a
@@ -49,17 +49,22 @@ labelAddresses [] _ = []
 
 getLabelAddresses prog = labelAddresses prog prog
 
-assembleLine :: Line -> Int
+assembleLine :: Line -> Word16
 assembleLine (Line l i o) =  shiftL (instToOpCode i) 12 .|. o
 --assembleLine (Line l i o) = "0x" ++ printf "%x" (instToOpCode i) ++ printf "%.3x" o
 
-assemble :: [Line] -> [Int]
+assemble :: [Line] -> [Word16]
 assemble = map assembleLine
 
-writeIntsToFile :: FilePath -> [Int] -> IO ()
-writeIntsToFile fp is  = B.writeFile fp $ encode (map toWord16 is) where
-                            toWord16::Int -> Word16
-                            toWord16 x = fromIntegral (((x .&. 0xFF00) `shiftR` 8) .|. ((x .&. 0xFF) `shiftL` 8)) 
+toWord16::Int -> Word16
+toWord16 x = fromIntegral (((x .&. 0xFF00) `shiftR` 8) .|. ((x .&. 0xFF) `shiftL` 8))
+--toWord16 = runPut putWord16le --> Possible to use something like that
+
+writeProgToFile :: FilePath -> [Word16] -> IO ()
+--writeProgToFile fp p = B.writeFile fp $ concatByteStr $ encodeProg p where
+--                            concatByteStr = foldr (<>) B.empty 
+--                            encodeProg = map (encode . toWord16) -- map encode (map toWord16 is)
+writeProgToFile fp p = B.writeFile fp $ runPut $ mapM_ putWord16le p
 
 var_n1 = 0x0499
 var_n2 = 0x0498
