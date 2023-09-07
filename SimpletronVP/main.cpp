@@ -22,7 +22,6 @@ std::vector<unsigned short> prog1 = {
     0x2499, // l05 WRITE     0x499 - Write N1 to console
     0x9008, // l06 JMP       0x008 - Go to end
     0x2498, // l07 WRITE     0x498 - Write N2 to console
-    0x4F00, // l08 STORE     0xF00 - Write acc to gpio
     0xC300  // l09 HALT
 };
 
