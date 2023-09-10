@@ -6,6 +6,8 @@ import qualified Data.ByteString.Lazy as B
 import Data.Binary.Put (runPut, putWord16le)
 import Data.List ( find, elemIndex )
 import Data.Maybe ( fromJust )
+import GHC.Data.StringBuffer (StringBuffer(len))
+import GHC.Llvm (LlvmStatement(Store))
 
 type Address = Word16
 type VarName = String
@@ -31,38 +33,72 @@ toLabel l = findAddressOf (lineWithLabel l) program :: Word16
         findAddressOf l p = fromIntegral (fromJust $ elemIndex l p) :: Word16
         lineWithLabel lbl = fromJust $ find (\(Line l _ _) -> l == lbl) program
 
-declareVar :: VarName -> Address -> [Var] -> [Var]
-declareVar name addr vars = vars ++ [Var name addr]
+declareVar :: VarName -> Var
+declareVar name = Var name $ ramStartAddr + (\(Var n a) -> a) (last varMap)
 
----- Assembly Program Begin ----
+varAddress :: VarName -> Address
+varAddress n = addressOf $ variableWithName n
+    where
+        addressOf (Var name a) = a
+        variableWithName n = fromJust $ find (\(Var name a) -> name == n) varMap
 
-var_n1 = 0x0499
-var_n2 = 0x0498
+nextAddress :: Address
+nextAddress = fromIntegral (length varMap) + ramStartAddr + 1
 
-ramStartAddr :: Word16
-ramStartAddr = 0x0400
+--- Assembly Program Begin ----
+varMap :: [Var]
+varMap = [
+    Var "t_modulus"     $ ramStartAddr - 1,
+    Var "t_mode"        $ ramStartAddr - 2,
+    Var "pwm_width"     $ ramStartAddr - 3,
+    Var "pwm_mode"      $ ramStartAddr - 4
+    ]
 
-pwmDutyCycleAddr :: Word16
-pwmDutyCycleAddr = ramStartAddr
+ramStartAddr :: Address
+ramStartAddr = 0x0500
+
+pwmStatusReg :: Address
+pwmStatusReg = 0xF20
+
+pwmWidthReg :: Address
+pwmWidthReg = 0xF21
+
+timerStatusReg :: Address
+timerStatusReg = 0x0F10
+
+timerPrescalarReg :: Address
+timerPrescalarReg = 0x0F11
+
+timerModulusReg :: Address
+timerModulusReg = 0x0F12
+
+timerCountVal :: Address
+timerCountVal = 0x0F13
 
 
 pwmSetProg :: [Line]
 pwmSetProg = [
-    Line "pwmSet"   LOAD    pwmDutyCycleAddr
+    Line "pwmCofig"     READ $ varAddress "t_modulus",
+    Line ""             READ $ varAddress "t_mode",
+    Line ""             READ $ varAddress "pwm_width",
+    Line ""             READ $ varAddress "pwm_mode",
+
+    Line "pwmSet"       LOAD $ varAddress "t_modulus",
+    Line ""             STORE timerModulusReg,
+
+    Line ""             LOAD $ varAddress "pwm_width",
+    Line ""             STORE pwmWidthReg,
+
+    Line ""             LOAD $ varAddress "pwm_mode",
+    Line ""             STORE pwmStatusReg,
+
+    Line ""             LOAD $ varAddress "t_mode",
+    Line ""             STORE timerStatusReg,
+
+    Line ""             JMP $ fromIntegral (length pwmSetProg - 1)
     ]
 
-program :: [Line]
-program = [
-    Line "Init"     READ    var_n1,
-    Line ""         READ    var_n2,
-    Line ""         LOAD    var_n1,
-    Line ""         SUB     var_n2,
-    Line ""         BLZ     $ toLabel "n2w",
-    Line ""         WRITE   var_n1,
-    Line ""         JMP     $ toLabel "end",
-    Line "n2w"      WRITE   var_n2,
-    Line "end"      HALT    0
-    ]
+program = pwmSetProg
 
 main :: IO ()
 main = writeProgToFile program "prog.hex"
