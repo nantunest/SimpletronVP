@@ -44,6 +44,11 @@ nextAddress :: Address
 nextAddress = fromIntegral (length varMap) + ramStartAddr + 1
 
 --- Assembly Program Begin ----
+romVarMap :: [Var]
+romVarMap = [
+
+    ]
+
 varMap :: [Var]
 varMap = [
     Var "t_modulus"     $ ramStartAddr - 1,
