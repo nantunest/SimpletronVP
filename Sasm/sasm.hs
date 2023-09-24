@@ -6,8 +6,6 @@ import qualified Data.ByteString.Lazy as B
 import Data.Binary.Put (runPut, putWord16le)
 import Data.List ( find, elemIndex )
 import Data.Maybe ( fromJust )
-import GHC.Data.StringBuffer (StringBuffer(len))
-import GHC.Llvm (LlvmStatement(Store))
 
 type Address = Word16
 type VarName = String
