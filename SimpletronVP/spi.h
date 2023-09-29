@@ -48,7 +48,6 @@ SC_MODULE(SpiShifter)
 
     unsigned short shift_counter = 0;
     unsigned short shift_reg;
-
     bool _miso;
 
     void update()
@@ -63,7 +62,6 @@ SC_MODULE(SpiShifter)
             }
             else if (sclk)
             {
-
                 if (shift_counter >= 16) // ce ^ clk ^ !busy ^ sc >= 16
                 {
                     mosi = static_cast<bool>(shift_reg & 0x01);
