@@ -10,6 +10,7 @@
 #include "pwm.h"
 #include "spi.h"
 #include "spi_device.h"
+#include "mpu6000.h"
 
 #include "simpletron.h"
 
@@ -212,7 +213,7 @@ int sc_main(int argc, char* argv[]) {
     rom.ce(rom_ce);
     rom_ce.write(false);
 
-    rom.load_prog(prog3);
+    rom.load_prog(prog4);
 
     Ram ram("ram1");
     ram.address(address);
@@ -251,7 +252,7 @@ int sc_main(int argc, char* argv[]) {
 
     std::cout << "Starting simulation" << std::endl;
 
-    sc_core::sc_start(2000, sc_core::SC_US);
+    sc_core::sc_start(3000, sc_core::SC_US);
 
     std::cout << "End of Simulation." << std::endl;
     sc_close_vcd_trace_file(wf);

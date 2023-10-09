@@ -1,7 +1,5 @@
 #pragma once
 #include <systemc.h>
-#include "mux.h"
-#include "spi_device.h"
 
 /*
 //----------------------------------------------------------------//
@@ -51,32 +49,43 @@ SC_MODULE(Mpu6000)
         SIZE
     };
 
-    std::array<unsigned short, RegisterAddr::SIZE> register_bank = {0, 1, 0, 0}; // Prescalar default is 1
+    std::array<unsigned short, RegisterAddr::SIZE> register_bank = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE};
 
     unsigned short shift_counter = 0;
     unsigned short shift_reg;
-    bool _miso;
+    bool _mosi;
+
+    static constexpr int B_n = 8;
+    static constexpr int B_1 = 1;
+
+    void sample()
+    {
+        _mosi = mosi;
+    }
+
+    void shift()
+    {
+        miso = static_cast<bool>(shift_reg & B_1);
+        shift_reg >>= 1;
+        shift_reg |= static_cast<unsigned short>(_mosi) << (B_n - 1);
+        shift_counter >= B_n ? shift_counter = 0 : shift_counter++;
+    }
 
     void update()
     {
         if (ce)
         {
-            // Read 8 bits as reg address and send regaddress content
-            // Change reg address content to new reg address
-
-            if (sclk) {
-                if (shift_counter >= 8)
+            if (!sclk)
+            {
+                shift();
+            }
+            else
+            {
+                if (shift_counter == B_n && shift_counter < AddrOffset)
                 {
-                    mosi = static_cast<bool>(shift_reg & 0x01);
-                    shift_reg >>= 1;
-                    shift_reg |= static_cast<unsigned short>(_miso) << 15;
-
-                    shift_counter = 0;
+                    shift_reg = register_bank[shift_reg - AddrOffset];
                 }
-                else
-                {
-
-                }
+                sample();
             }
         }
     }
@@ -84,7 +93,7 @@ SC_MODULE(Mpu6000)
     SC_CTOR(Mpu6000)
     {
         SC_METHOD(update);
-        sensitive << clk.neg();
+        sensitive << sclk;
     }
 
 };

@@ -14,33 +14,33 @@ SC_MODULE(SpiDevice)
 
     bool _mosi;
 
+    static constexpr int B_n = 16;
+    static constexpr int B_1 = 1;
+    
+    void sample()
+    {
+        _mosi = mosi;
+    }
+
+    void shift()
+    {
+        miso = static_cast<bool>(shift_reg & B_1);
+        shift_reg >>= 1;
+        shift_reg |= static_cast<unsigned short>(_mosi) << (B_n - 1);
+        shift_counter >= B_n ? shift_counter = 0 : shift_counter++;
+    }
+
     void update()
     {
         if (ce)
         {
             if (sclk)
             {
-
-                if (shift_counter >= 16) // ce ^ !sclk ^ sc >= 16
-                {
-                    miso = static_cast<bool>(shift_reg & 0x01);
-                    shift_reg >>= 1;
-                    shift_reg |= static_cast<unsigned short>(_mosi) << 15;
-
-                    shift_counter = 0;
-                }
-                else // ce ^ !sclk ^ sc < 16 
-                {
-                    miso = static_cast<bool>(shift_reg & 0x01);
-                    shift_reg >>= 1;
-                    shift_reg |= static_cast<unsigned short>(_mosi) << 15;
-                    shift_counter++;
-                }
+                shift();
             }
-            else if (shift_counter <= 16)
-                // ce ^ sclk ^ sc < 16
+            else if (shift_counter <= B_n)
             {
-                _mosi = mosi; 
+                sample();
             }
         } 
     }
