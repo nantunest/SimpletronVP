@@ -213,7 +213,7 @@ int sc_main(int argc, char* argv[]) {
     rom.ce(rom_ce);
     rom_ce.write(false);
 
-    rom.load_prog(prog4);
+    rom.load_prog(prog);
 
     Ram ram("ram1");
     ram.address(address);

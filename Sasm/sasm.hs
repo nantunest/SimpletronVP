@@ -35,16 +35,35 @@ toLabel p l = findAddressOf (lineWithLabel l) p :: Word16
         findAddressOf l p = fromIntegral (fromJust $ elemIndex l p) :: Word16
         lineWithLabel lbl = fromJust $ find (\(Line l _ _) -> l == lbl) p
 
---declareVar :: VarName -> Var
---declareVar name = Var name $ ramStartAddr + (\(Var n a) -> a) (last varMap)
-
 varAddress :: VarMap -> VarName -> Address
 varAddress vm n = addressOf $ variableWithName n
     where
         addressOf (Var name a) = a
         variableWithName n = fromJust $ find (\(Var name a) -> name == n) vm 
 
---nextAddress :: Address
---nextAddress = fromIntegral (length varMap) + ramStartAddr + 1
+fromRom :: [RomVar] -> [Var]
+fromRom r = map (\(RomVar var val) -> var) r
 
---- Assembly Program Begin ----
+ramStartAddr :: Address
+ramStartAddr = 0x0500
+
+romStartAddr :: Address
+romStartAddr = 0x0000
+
+pwmStatusReg :: Address
+pwmStatusReg = 0xF20
+
+pwmWidthReg :: Address
+pwmWidthReg = 0xF21
+
+timerStatusReg :: Address
+timerStatusReg = 0x0F10
+
+timerPrescalarReg :: Address
+timerPrescalarReg = 0x0F11
+
+timerModulusReg :: Address
+timerModulusReg = 0x0F12
+
+timerCountVal :: Address
+timerCountVal = 0x0F13
