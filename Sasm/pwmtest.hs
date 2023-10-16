@@ -1,11 +1,11 @@
 import Sasm
 
-romVal:: RomVarMap
-romVal= [
-        RomVar (Var "t_modulus" $ romStartAddr  - 0)  10,
-        RomVar (Var "t_mode" $ romStartAddr     - 1)  2,
-        RomVar (Var "pwm_width" $ romStartAddr  - 2)  7,
-        RomVar (Var "pwm_mode" $ romStartAddr   - 3)  1
+romValMap:: RomVarMap
+romValMap= [
+        RomVar (Var "t_modulus" $ romStaticAddr + 0) 10,
+        RomVar (Var "t_mode"    $ romStaticAddr + 1) 2,
+        RomVar (Var "pwm_width" $ romStaticAddr + 2) 7,
+        RomVar (Var "pwm_mode"  $ romStaticAddr + 3) 1
     ]
 
 varMap :: [Var]
@@ -23,7 +23,7 @@ pwmSetProg = [
     Line ""             READ $ varAddress varMap "pwm_width",
     Line ""             READ $ varAddress varMap "pwm_mode",
 
-    Line "pwmSet"       LOAD $ varAddress varMap "t_modulus",
+    Line "pwmSet"       LOAD $ varAddress (fromRom romValMap) "t_modulus",
     Line ""             STORE timerModulusReg,
 
     Line ""             LOAD $ varAddress varMap "pwm_width",
@@ -39,4 +39,4 @@ pwmSetProg = [
     ]
 
 main :: IO ()
-main = writeProgToFile pwmSetProg "prog.hex"
+main = writeAssembledToFile (assembleProgram pwmSetProg) "prog.hex"

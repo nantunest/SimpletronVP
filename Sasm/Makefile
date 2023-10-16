@@ -1,4 +1,4 @@
-pwmtest:
+pwmtest: pwmtest.hs
 	ghc -o pwmtest pwmtest.hs
 
 clean:
