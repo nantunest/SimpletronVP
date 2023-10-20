@@ -23,21 +23,26 @@ data Var = Var VarName Address deriving (Show, Eq)
 
 data RomVar = RomVar Var Word16 deriving (Show, Eq)
 
-assembleLine :: Line -> Word16
-assembleLine (Line l i o) =  shiftL (instToOpCode i) 12 .|. o
-    where instToOpCode i = fromIntegral (fromEnum i + 1) :: Word16
-
 assembleProgram ::  Program -> AssebledArray
 assembleProgram = map assembleLine
+    where assembleLine (Line l i o) =  shiftL (instToOpCode i) 12 .|. o
+            where instToOpCode i = fromIntegral (fromEnum i + 1) :: Word16
 
-assembleRomVar :: RomVar -> Word16
-assembleRomVar (RomVar v w) = w
+assembleRomStatic :: RomVarMap -> AssebledArray
+assembleRomStatic = map assembleRomVar
+    where assembleRomVar (RomVar v w) = w :: Word16
 
-assembleRom :: RomVarMap -> AssebledArray
-assembleRom = map assembleRomVar
+assembleRom :: Program -> RomVarMap -> AssebledArray
+assembleRom rvm p = assembleProgram rvm ++ fillGap ++ assembleRomStatic p
+    where fillGap = replicate numOfWords 0
+            where numOfWords = wRomStaticAddr - progLen
+                    where progLen = length $ assembleProgram rvm
+                          wRomStaticAddr = fromInteger (toInteger romStaticAddr)
 
 writeAssembledToFile :: AssebledArray -> FilePath -> IO ()
 writeAssembledToFile a f = B.writeFile f $ runPut $ mapM_ putWord16le a
+
+-- ASM Keywords
 
 toLabel :: Program -> String -> Word16
 toLabel p l = findAddressOf (lineWithLabel l) p :: Word16
@@ -49,19 +54,21 @@ varAddress :: VarMap -> VarName -> Address
 varAddress vm n = addressOf $ variableWithName n
     where
         addressOf (Var name a) = a
-        variableWithName n = fromJust $ find (\(Var name a) -> name == n) vm 
+        variableWithName n = fromJust $ find (\(Var name a) -> name == n) vm
 
 fromRom :: [RomVar] -> [Var]
-fromRom r = map (\(RomVar var val) -> var) r
+fromRom = map (\(RomVar var val) -> var)
 
-ramStartAddr :: Address
-ramStartAddr = 0x500
+-- Memory addresses definitions
 
 romStartAddr :: Address
 romStartAddr = 0x000
 
 romStaticAddr :: Address
 romStaticAddr = 0x400
+
+ramStartAddr :: Address
+ramStartAddr = 0x500
 
 pwmStatusReg :: Address
 pwmStatusReg = 0xF20

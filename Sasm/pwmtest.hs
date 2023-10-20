@@ -16,23 +16,18 @@ varMap = [
     Var "pwm_mode"      $ ramStartAddr + 3
     ]
 
-pwmSetProg :: [Line]
+pwmSetProg :: Program
 pwmSetProg = [
-    Line "pwmCofig"     READ $ varAddress varMap "t_modulus",
-    Line ""             READ $ varAddress varMap "t_mode",
-    Line ""             READ $ varAddress varMap "pwm_width",
-    Line ""             READ $ varAddress varMap "pwm_mode",
-
     Line "pwmSet"       LOAD $ varAddress (fromRom romValMap) "t_modulus",
     Line ""             STORE timerModulusReg,
 
-    Line ""             LOAD $ varAddress varMap "pwm_width",
+    Line ""             LOAD $ varAddress (fromRom romValMap) "pwm_width",
     Line ""             STORE pwmWidthReg,
 
-    Line ""             LOAD $ varAddress varMap "pwm_mode",
+    Line ""             LOAD $ varAddress (fromRom romValMap) "pwm_mode",
     Line ""             STORE pwmStatusReg,
 
-    Line ""             LOAD $ varAddress varMap "t_mode",
+    Line ""             LOAD $ varAddress (fromRom romValMap) "t_mode",
     Line ""             STORE timerStatusReg,
 
     Line ""             JMP $ fromIntegral (length pwmSetProg - 1)
