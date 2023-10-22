@@ -30,8 +30,9 @@ pwmSetProg = [
     Line ""             LOAD $ varAddress (fromRom romValMap) "t_mode",
     Line ""             STORE timerStatusReg,
 
+    Line ""             READ $ varAddress varMap "t_modulus",
     Line ""             JMP $ fromIntegral (length pwmSetProg - 1)
     ]
 
 main :: IO ()
-main = writeAssembledToFile (assembleProgram pwmSetProg) "prog.hex"
+main = writeAssembledToFile (assembleRom pwmSetProg romValMap) "rom.hex"

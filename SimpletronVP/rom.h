@@ -33,6 +33,7 @@ SC_MODULE(Rom)
         for (unsigned short i = 0; i < prog.size(); i++)
         {
             memory[i] = prog[i];
+            std::cout << "ROM[" << i << "]" << " = " << memory[i] << std::endl;
         }
     }
 

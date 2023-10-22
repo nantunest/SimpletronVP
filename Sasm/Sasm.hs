@@ -65,10 +65,10 @@ romStartAddr :: Address
 romStartAddr = 0x000
 
 romStaticAddr :: Address
-romStaticAddr = 0x400
+romStaticAddr = 0x300
 
 ramStartAddr :: Address
-ramStartAddr = 0x500
+ramStartAddr = 0x400
 
 pwmStatusReg :: Address
 pwmStatusReg = 0xF20
