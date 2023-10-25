@@ -8,31 +8,33 @@ import Data.Maybe ( fromJust )
 
 type Address = Word16
 type VarName = String
-type Program = [Line]
+type Program = [Instruction]
 type VarMap  = [Var]
-type RomVarMap = [RomVar]
+type StaticVarMap = [StaticVar]
 type AssebledArray = [Word16]
+type Register = (String, Address)
+type RegisterMap = [Register]
 
-data Instruction = READ | WRITE | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BLZ | BEZ | HALT
+data OpCode = READ | WRITE | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BLZ | BEZ | HALT
                   deriving (Enum, Show, Eq)
 
-data Line = Line String Instruction Address
+data Instruction = Instruction String OpCode Address
             deriving (Show, Eq)
 
 data Var = Var VarName Address deriving (Show, Eq)
 
-data RomVar = RomVar Var Word16 deriving (Show, Eq)
+data StaticVar = StaticVar Var Address deriving (Show, Eq)
 
 assembleProgram ::  Program -> AssebledArray
-assembleProgram = map assembleLine
-    where assembleLine (Line l i o) =  shiftL (instToOpCode i) 12 .|. o
+assembleProgram = map assembleInstruction
+    where assembleInstruction (Instruction l i o) =  shiftL (instToOpCode i) 12 .|. o
             where instToOpCode i = fromIntegral (fromEnum i + 1) :: Word16
 
-assembleRomStatic :: RomVarMap -> AssebledArray
-assembleRomStatic = map assembleRomVar
-    where assembleRomVar (RomVar v w) = w :: Word16
+assembleRomStatic :: StaticVarMap -> AssebledArray
+assembleRomStatic = map assembleStaticVar
+    where assembleStaticVar (StaticVar v w) = w :: Word16
 
-assembleRom :: Program -> RomVarMap -> AssebledArray
+assembleRom :: Program -> StaticVarMap -> AssebledArray
 assembleRom rvm p = assembleProgram rvm ++ fillGap ++ assembleRomStatic p
     where fillGap = replicate numOfWords 0
             where numOfWords = wRomStaticAddr - progLen
@@ -48,7 +50,7 @@ toLabel :: Program -> String -> Word16
 toLabel p l = findAddressOf (lineWithLabel l) p :: Word16
     where
         findAddressOf l p = fromIntegral (fromJust $ elemIndex l p) :: Word16
-        lineWithLabel lbl = fromJust $ find (\(Line l _ _) -> l == lbl) p
+        lineWithLabel lbl = fromJust $ find (\(Instruction l _ _) -> l == lbl) p
 
 varAddress :: VarMap -> VarName -> Address
 varAddress vm n = addressOf $ variableWithName n
@@ -56,34 +58,28 @@ varAddress vm n = addressOf $ variableWithName n
         addressOf (Var name a) = a
         variableWithName n = fromJust $ find (\(Var name a) -> name == n) vm
 
-fromRom :: [RomVar] -> [Var]
-fromRom = map (\(RomVar var val) -> var)
+fromRom :: [StaticVar] -> [Var]
+fromRom = map (\(StaticVar var val) -> var)
+
 
 -- Memory addresses definitions
-
-romStartAddr :: Address
-romStartAddr = 0x000
 
 romStaticAddr :: Address
 romStaticAddr = 0x300
 
 ramStartAddr :: Address
-ramStartAddr = 0x400
+ramStartAddr = 0x400 
 
-pwmStatusReg :: Address
-pwmStatusReg = 0xF20
-
-pwmWidthReg :: Address
-pwmWidthReg = 0xF21
-
-timerStatusReg :: Address
-timerStatusReg = 0x0F10
-
-timerPrescalarReg :: Address
-timerPrescalarReg = 0x0F11
-
-timerModulusReg :: Address
-timerModulusReg = 0x0F12
-
-timerCountVal :: Address
-timerCountVal = 0x0F13
+registerMap :: VarMap 
+registerMap = [
+    Var "timerState"     0xF10,
+    Var "timerPrescalar" 0xF11,
+    Var "timerModulus"   0xF12,
+    Var "timerCountVal"  0xF13,
+    Var "pwmState"       0xF20,
+    Var "pwmWidth"       0xF21,
+    Var "spiState"       0xF30,
+    Var "spiPrescalar"   0xF31,
+    Var "spiCommand"     0xF32,
+    Var "spiShift"       0xF33
+    ]

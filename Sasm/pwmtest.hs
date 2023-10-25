@@ -1,14 +1,14 @@
 import Sasm
 
-romValMap:: RomVarMap
+romValMap:: StaticVarMap
 romValMap= [
-        RomVar (Var "t_modulus" $ romStaticAddr + 0) 10,
-        RomVar (Var "t_mode"    $ romStaticAddr + 1) 2,
-        RomVar (Var "pwm_width" $ romStaticAddr + 2) 7,
-        RomVar (Var "pwm_mode"  $ romStaticAddr + 3) 1
+        StaticVar (Var "t_modulus" $ romStaticAddr + 0) 10,
+        StaticVar (Var "t_mode"    $ romStaticAddr + 1) 2,
+        StaticVar (Var "pwm_width" $ romStaticAddr + 2) 7,
+        StaticVar (Var "pwm_mode"  $ romStaticAddr + 3) 1
     ]
 
-varMap :: [Var]
+varMap :: VarMap 
 varMap = [
     Var "t_modulus"     $ ramStartAddr + 0,
     Var "t_mode"        $ ramStartAddr + 1,
@@ -18,20 +18,19 @@ varMap = [
 
 pwmSetProg :: Program
 pwmSetProg = [
-    Line "pwmSet"       LOAD $ varAddress (fromRom romValMap) "t_modulus",
-    Line ""             STORE timerModulusReg,
+    Instruction "pwmSet"       LOAD $ varAddress (fromRom romValMap) "t_modulus",
+    Instruction ""             STORE $ varAddress registerMap "timerModulus",
 
-    Line ""             LOAD $ varAddress (fromRom romValMap) "pwm_width",
-    Line ""             STORE pwmWidthReg,
+    Instruction ""             LOAD $ varAddress (fromRom romValMap) "pwm_width",
+    Instruction ""             STORE $ varAddress registerMap "pwmWidth",
 
-    Line ""             LOAD $ varAddress (fromRom romValMap) "pwm_mode",
-    Line ""             STORE pwmStatusReg,
+    Instruction ""             LOAD $ varAddress (fromRom romValMap) "pwm_mode",
+    Instruction ""             STORE $ varAddress registerMap "pwmState",
 
-    Line ""             LOAD $ varAddress (fromRom romValMap) "t_mode",
-    Line ""             STORE timerStatusReg,
+    Instruction ""             LOAD $ varAddress (fromRom romValMap) "t_mode",
+    Instruction ""             STORE $ varAddress registerMap "timerState",
 
-    Line ""             READ $ varAddress varMap "t_modulus",
-    Line ""             JMP $ fromIntegral (length pwmSetProg - 1)
+    Instruction ""             JMP $ fromIntegral (length pwmSetProg - 1)
     ]
 
 main :: IO ()

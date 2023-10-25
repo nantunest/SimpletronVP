@@ -4,3 +4,8 @@ pwmtest: pwmtest.hs
 clean:
 	rm -rf *.hi
 	rm -rf *.o
+
+%: $(OBJS)
+	@echo $@
+	ghc -o $@ $@.hs 
+	./$@
