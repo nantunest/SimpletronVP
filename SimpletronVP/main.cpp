@@ -194,11 +194,18 @@ int sc_main(int argc, char* argv[]) {
     spi.ss(ss);
     spi.sclk(sclk);
 
-    SpiDevice spi_device("spidev1");
-    spi_device.ce(ss);
-    spi_device.sclk(sclk);
-    spi_device.miso(miso);
-    spi_device.mosi(mosi);
+//    SpiDevice spi_device("spidev1");
+//    spi_device.ce(ss);
+//    spi_device.sclk(sclk);
+//    spi_device.miso(miso);
+//    spi_device.mosi(mosi);
+
+
+    Mpu6000 mpu_6000("mpu_6000");
+    mpu_6000.ce(ss);
+    mpu_6000.sclk(sclk);
+    mpu_6000.miso(miso);
+    mpu_6000.mosi(mosi);
 
     Simpletron simpletron("simpletron1");
     simpletron.clk(clk);
@@ -243,16 +250,14 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, spi.shifter.shift_counter, "spi.shifter.shift_counter");
     sc_trace(wf, spi.shifter.wshift, "spi.shifter.wshift");
     sc_trace(wf, spi.shifter.busy, "spi.shifter.busy");
-    sc_trace(wf, spi.shifter._miso, "spi.shifter._miso");
 
-    sc_trace(wf, spi_device.shift_reg, "spi_device.shift_reg");
-    sc_trace(wf, spi_device.miso, "spi_device.miso");
-    sc_trace(wf, spi_device.mosi, "spi_device.mosi");
-    sc_trace(wf, spi_device._mosi, "spi_device._mosi");
+    sc_trace(wf, mpu_6000.shift_reg, "mpu_6000.shift_reg");
+    sc_trace(wf, mpu_6000.miso, "mpu_6000.miso");
+    sc_trace(wf, mpu_6000.mosi, "mpu_6000.mosi");
 
     std::cout << "Starting simulation" << std::endl;
 
-    sc_core::sc_start(3000, sc_core::SC_US);
+    sc_core::sc_start(5000, sc_core::SC_US);
 
     std::cout << "End of Simulation." << std::endl;
     sc_close_vcd_trace_file(wf);

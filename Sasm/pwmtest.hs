@@ -34,4 +34,4 @@ pwmSetProg = [
     ]
 
 main :: IO ()
-main = writeAssembledToFile (assembleRom pwmSetProg romValMap) "rom.hex"
+main = writeAssembledToFile (assembleRom pwmSetProg romValMap) "pwmtest.hex"

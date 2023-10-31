@@ -24,7 +24,7 @@ SC_MODULE(Simpletron)
                   DIV       = 0x07,
                   MUL       = 0x08,
                   JMP       = 0x09,
-                  BLZ       = 0x0A,
+                  BGZ       = 0x0A,
                   BEZ       = 0x0B,
                   HALT      = 0x0C
                  };
@@ -103,11 +103,11 @@ SC_MODULE(Simpletron)
     }
 
 
-    void blz()
+    void bgz()
     {
         std::cout << "EXECUTING BRANCHNEG" << std::endl;
 
-        if (accumulator < 0) {
+        if (accumulator > 0) {
             instruction_pointer = operand_addr;
         }
     }
@@ -173,8 +173,8 @@ SC_MODULE(Simpletron)
             case JMP:
                 jmp();
                 break;
-            case BLZ:
-                blz();
+            case BGZ:
+                bgz();
                 break;
             case BEZ:
                 bez();

@@ -29,8 +29,6 @@ SC_MODULE(Mpu6000)
     sc_out<bool> miso;
     sc_in<bool> mosi;
     
-    unsigned short AddrOffset = 0x3B;
-
     enum RegisterAddr {
         ACCEL_XOUT_H = 0x00, 
         ACCEL_XOUT_L, 
@@ -51,41 +49,47 @@ SC_MODULE(Mpu6000)
 
     std::array<unsigned short, RegisterAddr::SIZE> register_bank = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE};
 
-    unsigned short shift_counter = 0;
-    unsigned short shift_reg;
-    bool _mosi;
+    unsigned char shift_counter = 0;
+    unsigned char shift_reg = 0xCC;
 
     static constexpr int B_n = 8;
     static constexpr int B_1 = 1;
 
-    void sample()
+    void write_bit()
     {
-        _mosi = mosi;
+        miso = static_cast<bool>(shift_reg & B_1);
     }
 
     void shift()
     {
-        miso = static_cast<bool>(shift_reg & B_1);
         shift_reg >>= 1;
-        shift_reg |= static_cast<unsigned short>(_mosi) << (B_n - 1);
-        shift_counter >= B_n ? shift_counter = 0 : shift_counter++;
-    }
+        shift_reg |= static_cast<unsigned char>(mosi) << (B_n - 1);
+        shift_counter++;
+
+   }
 
     void update()
     {
         if (ce)
         {
-            if (!sclk)
+            if (sclk)
             {
                 shift();
+                if (shift_counter >= B_n)
+                { 
+                    shift_counter = 0;
+                    std::cout << "[MPU6000]: shift_reg = " << shift_reg <<" " << "content = " << register_bank[shift_reg] << std::endl; 
+                    shift_reg = register_bank[shift_reg];
+                }
+                // else
+                // {
+                //     shift();
+                // }
+ 
             }
             else
             {
-                if (shift_counter == B_n && shift_counter < AddrOffset)
-                {
-                    shift_reg = register_bank[shift_reg - AddrOffset];
-                }
-                sample();
+                write_bit();
             }
         }
     }

@@ -48,7 +48,22 @@ SC_MODULE(SpiShifter)
 
     unsigned short shift_counter = 0;
     unsigned short shift_reg;
-    bool _miso;
+
+    static constexpr int B_n = 16;
+    static constexpr int B_1 = 1;
+
+    void write_bit()
+    {
+        mosi = static_cast<bool>(shift_reg & B_1);
+    }
+
+    void shift()
+    {
+        shift_reg >>= 1;
+        shift_reg |= static_cast<unsigned short>(miso) << (B_n - 1);
+        shift_counter++;
+    }
+
 
     void update()
     {
@@ -60,30 +75,20 @@ SC_MODULE(SpiShifter)
                 shift_reg = wshift; 
                 busy = true;
             }
+            
             else if (sclk)
             {
-                if (shift_counter >= 16) // ce ^ clk ^ !busy ^ sc >= 16
+                shift();
+                if (shift_counter >= B_n)
                 {
-                    mosi = static_cast<bool>(shift_reg & 0x01);
-                    shift_reg >>= 1;
-                    shift_reg |= static_cast<unsigned short>(_miso) << 15;
-
                     rshift = shift_reg;
                     shift_counter = 0;
                     busy = false;
-
-                }
-                else // ce ^ clk ^ busy ^ sc < 16 
-                {
-                    mosi = static_cast<bool>(shift_reg & 0x01);
-                    shift_reg >>= 1;
-                    shift_reg |= static_cast<unsigned short>(_miso) << 15;
-                    shift_counter++;
                 }
             }
-            else if (shift_counter <= 16)
+            else
             {
-                _miso = miso; 
+                write_bit();
             }
         } 
     }
@@ -204,6 +209,10 @@ SC_MODULE(Spi)
                 {
                     // User-code commands acks spi DONE setting it back to READY.
                     register_bank[RegisterAddr::STATE] = State::READY;
+                }
+                else if (ce && reg_addr == RegisterAddr::SHIFT)
+                {
+                    data = register_bank[RegisterAddr::SHIFT];
                 }
                 ss = false;
             break;

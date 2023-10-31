@@ -15,7 +15,7 @@ type AssebledArray = [Word16]
 type Register = (String, Address)
 type RegisterMap = [Register]
 
-data OpCode = READ | WRITE | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BLZ | BEZ | HALT
+data OpCode = READ | WRITE | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BGZ | BEZ | HALT
                   deriving (Enum, Show, Eq)
 
 data Instruction = Instruction String OpCode Address
