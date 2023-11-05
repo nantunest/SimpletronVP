@@ -6,11 +6,11 @@ SC_MODULE(Simpletron)
     sc_in<bool> clk;
     sc_out<unsigned short> address;
     sc_inout<unsigned short> data;
-    sc_out<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
+    sc_out<bool> we; // WE = 0 -> Read, WE = 1 -> Write
     
     unsigned short i_address = 0;
     unsigned short i_data = 0;
-    bool i_ram_rw = false;
+    bool i_we = false;
 
     enum State {FETCH, DECODE, EXEC, WRITE_BACK};
     State state = FETCH;
@@ -26,7 +26,9 @@ SC_MODULE(Simpletron)
                   JMP       = 0x09,
                   BGZ       = 0x0A,
                   BEZ       = 0x0B,
-                  HALT      = 0x0C
+                  HALT      = 0x0C,
+                  SOR       = 0x0D,
+                  SAND      = 0x0E,
                  };
 
     unsigned short accumulator = 0;
@@ -50,7 +52,7 @@ SC_MODULE(Simpletron)
     {
         std::cout << "EXECUTING STORE" << std::endl;
         i_data = accumulator;
-        i_ram_rw = true;
+        i_we = true;
         i_address = operand_addr;
     }
     void halt()
@@ -135,7 +137,7 @@ SC_MODULE(Simpletron)
         std::cout << "EXECUTING READ" << std::endl;
         std::cout << " ### CONSOLE: ";
         std::cin >> data_out;
-        i_ram_rw = true;
+        i_we = true;
         i_data = data_out;
         i_address = operand_addr;
     }
@@ -189,25 +191,25 @@ SC_MODULE(Simpletron)
 
     void set_defaults()
     {
-        i_ram_rw = false;
+        i_we = false;
     }
     void print_internals()
     {
         std::cout << "Address: " << std::hex << i_address << std::endl;
         std::cout << "Data: " << std::hex << i_data << std::endl;
-        std::cout << "Ram_RW: " << std::hex << i_ram_rw << std::endl;
+        std::cout << "we: " << std::hex << i_we << std::endl;
     }
 
     void assign_internals(){
         i_address = address;
         i_data = data;
-        i_ram_rw = ram_rw;
+        i_we = we;
     }
 
     void assign_signals(){
         address = i_address;
         data = i_data;
-        ram_rw = i_ram_rw;
+        we = i_we;
     }
    
     void run()
@@ -238,7 +240,7 @@ SC_MODULE(Simpletron)
                         /* Set state outputs */
                         set_defaults();
                         i_address = instruction_pointer;
-                        i_ram_rw = false;
+                        i_we = false;
 
                         /* Update internal registers */
                         instruction_pointer++;
@@ -311,7 +313,7 @@ SC_MODULE(Simpletron)
                         std::cout << "WRITE_BACK" << std::endl; 
                         std::cout << "Data: " << std::hex << data << std::endl;
                         std::cout << "Accumulator: " << std::hex << accumulator << std::endl;
-                        ram_rw = true;
+                        we = true;
                         state = FETCH;
                 }
             }

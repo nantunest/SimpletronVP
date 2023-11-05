@@ -114,7 +114,7 @@ int sc_main(int argc, char* argv[]) {
     sc_clock clk("clock", 10, sc_core::SC_US, 0.5, 10, sc_core::SC_US);
     sc_signal<unsigned short> address;
     sc_signal<unsigned short, SC_MANY_WRITERS> data;
-    sc_signal<bool> ram_rw; // WE = 0 -> Read, WE = 1 -> Write
+    sc_signal<bool> simp_we; // WE = 0 -> Read, WE = 1 -> Write
 
     sc_signal<bool> ram_ce;
     sc_signal<bool> rom_ce;
@@ -139,7 +139,7 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, clk, "sys.clock");
     sc_trace(wf, address, "sys.address");
     sc_trace(wf, data, "sys.data");
-    sc_trace(wf, ram_rw, "sys.ram_we");
+    sc_trace(wf, simp_we, "sys.");
     sc_trace(wf, rom_ce, "sys.rom_ce");
     sc_trace(wf, ram_ce, "sys.ram_ce");
     sc_trace(wf, gpio_output, "sys.gpio_output");
@@ -151,6 +151,7 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, mosi, "sys.mosi");
     sc_trace(wf, ss, "sys.ss");
     sc_trace(wf, sclk, "sys.sclk");
+    sc_trace(wf, simp_we, "sys.simp_we");
 
     MemoryMux memoryMux("mmux");
     memoryMux.address(address);
@@ -193,6 +194,7 @@ int sc_main(int argc, char* argv[]) {
     spi.mosi(mosi);
     spi.ss(ss);
     spi.sclk(sclk);
+    spi.we(simp_we);
 
 //    SpiDevice spi_device("spidev1");
 //    spi_device.ce(ss);
@@ -211,7 +213,7 @@ int sc_main(int argc, char* argv[]) {
     simpletron.clk(clk);
     simpletron.address(address);
     simpletron.data(data);
-    simpletron.ram_rw(ram_rw);
+    simpletron.we(simp_we);
 
     Rom rom("rom1");
     rom.address(address);
@@ -225,7 +227,7 @@ int sc_main(int argc, char* argv[]) {
     Ram ram("ram1");
     ram.address(address);
     ram.data(data);
-    ram.write_enable(ram_rw);
+    ram.write_enable(simp_we);
     ram.clk(clk);
     ram.ce(ram_ce);
     ram_ce.write(false);
@@ -249,7 +251,15 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(wf, spi.shifter.shift_reg, "spi.shifter.shift_reg");
     sc_trace(wf, spi.shifter.shift_counter, "spi.shifter.shift_counter");
     sc_trace(wf, spi.shifter.wshift, "spi.shifter.wshift");
+    sc_trace(wf, spi.shifter.rshift, "spi.shifter.rshift");
     sc_trace(wf, spi.shifter.busy, "spi.shifter.busy");
+
+
+    sc_trace(wf, memoryMux.spi_ce, "memoryMux.spi_ce");
+    sc_trace(wf, memoryMux.rom_ce, "memoryMux.rom_ce");
+    sc_trace(wf, memoryMux.ram_ce, "memoryMux.ram_ce");
+    sc_trace(wf, memoryMux.gpio_ce, "memoryMux.gpio_ce");
+    sc_trace(wf, memoryMux.timer_ce, "memoryMux.timer_ce");
 
     sc_trace(wf, mpu_6000.shift_reg, "mpu_6000.shift_reg");
     sc_trace(wf, mpu_6000.miso, "mpu_6000.miso");
@@ -257,7 +267,7 @@ int sc_main(int argc, char* argv[]) {
 
     std::cout << "Starting simulation" << std::endl;
 
-    sc_core::sc_start(5000, sc_core::SC_US);
+    sc_core::sc_start(20000, sc_core::SC_US);
 
     std::cout << "End of Simulation." << std::endl;
     sc_close_vcd_trace_file(wf);

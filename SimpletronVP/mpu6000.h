@@ -50,7 +50,7 @@ SC_MODULE(Mpu6000)
     std::array<unsigned short, RegisterAddr::SIZE> register_bank = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE};
 
     unsigned char shift_counter = 0;
-    unsigned char shift_reg = 0xCC;
+    unsigned char shift_reg = 0x00;
 
     static constexpr int B_n = 8;
     static constexpr int B_1 = 1;

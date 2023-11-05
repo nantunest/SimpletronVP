@@ -1,6 +1,7 @@
 #pragma once
 #include <systemc.h>
 #include <array>
+#include "mux.h"
 
 SC_MODULE(SpiPrescalar)
 {
@@ -109,6 +110,7 @@ SC_MODULE(Spi)
     sc_inout<unsigned short> data;
     sc_in<bool> clk;
     sc_in<bool> ce;
+    sc_in<bool> we;
 
     sc_in<bool> miso;
     sc_out<bool> mosi;
@@ -145,7 +147,7 @@ SC_MODULE(Spi)
 
     enum Command {
         NOP = 0x00,
-        TRANSFER = 0x01
+        TRANSFER = 0x01,
     };
     
     static constexpr unsigned short base_address = MemoryMux::spi_addr;
@@ -160,20 +162,27 @@ SC_MODULE(Spi)
         switch (register_bank[RegisterAddr::STATE])
         {
             case State::CONF:
-                std::cout << "[SPI]: Conf" << std::endl;
-                if (ce && reg_addr < RegisterAddr::SIZE) // Configuration
+                if (ce && we && reg_addr < RegisterAddr::SIZE) // Configuration
                 {
                     // TODO: Validate register address and RW permission
                     register_bank[reg_addr] = data;
                 }
+                else if (ce && !we && reg_addr < RegisterAddr::SIZE)
+                {
+                    data = register_bank[reg_addr];
+                }
                 else if (register_bank[RegisterAddr::COMMAND] == Command::TRANSFER)
                 {
                     register_bank[RegisterAddr::STATE] = State::READY;
-                    std::cout << "[SPI]: Register cmd is " << register_bank[RegisterAddr::COMMAND] << std::endl;
                 } 
             break;
 
             case State::READY:
+                // In READY state, read from register_bank
+                if (ce && !we && reg_addr < RegisterAddr::SIZE){
+                    data = register_bank[reg_addr];
+                }
+
                 std::cout << "[SPI]: Ready" << std::endl;
 
                 prescalar_val = register_bank[RegisterAddr::PRESCALAR]; 
@@ -187,6 +196,12 @@ SC_MODULE(Spi)
             break;
             
             case State::SHIFTING:
+
+                // In SHIFTING state, read from register_bank
+                if (ce && !we && reg_addr < RegisterAddr::SIZE){
+                    data = register_bank[reg_addr];
+                }
+
                 std::cout << "[SPI]: Shifting" << std::endl;
                 if (!shifter_busy)
                 {
@@ -205,15 +220,22 @@ SC_MODULE(Spi)
 
             case State::DONE:
                 std::cout << "[SPI]: Done" << std::endl;
-                if (ce && reg_addr == RegisterAddr::STATE && data == State::READY)
+                if (ce && we && reg_addr == RegisterAddr::COMMAND && data == Command::TRANSFER)
                 {
                     // User-code commands acks spi DONE setting it back to READY.
                     register_bank[RegisterAddr::STATE] = State::READY;
                 }
-                else if (ce && reg_addr == RegisterAddr::SHIFT)
+                else if (ce && we && reg_addr < RegisterAddr::SIZE) // Configuration
                 {
-                    data = register_bank[RegisterAddr::SHIFT];
+                    // TODO: Validate register address and RW permission
+                    register_bank[reg_addr] = data;
                 }
+                else if (ce && !we && reg_addr < RegisterAddr::SIZE)
+                {
+                    data = register_bank[reg_addr];
+                }
+                
+                
                 ss = false;
             break;
         }
