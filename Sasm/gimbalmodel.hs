@@ -1,29 +1,76 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use camelCase" #-}
+import ForSyDe.Shallow
 
+type RefAngle = Float
 type MotorAngle = Float
 type GyroAngle = Float
 type PwmSignal = Float
 type GimbalAngle = Float
-type AngleError = Float
+type DisturbAngle = Float
+type ErrorAngle = Float
 type LinearMovement = Float
 
 servoMotor :: PwmSignal -> MotorAngle
-servoMotor spwm = (spwm / 100) * 180.0
+servoMotor spwm = spwm * 1.8
 
-gyro :: GimbalAngle -> MotorAngle -> GyroAngle
-gyro ga ma = ga - ma
+gimbal :: DisturbAngle -> MotorAngle -> GimbalAngle
+gimbal ga ma = ga + ma
 
-gimbal :: LinearMovement -> GimbalAngle
-gimbal lm = asin (lm/gimbalArmLength) * (360/(2*pi))
-    where gimbalArmLength = 0.2 -- 10cm
+gyro :: GimbalAngle -> GyroAngle
+gyro a = a
 
-control :: AngleError -> PwmSignal
-control e = e/1.8
+gimbalDisturb :: LinearMovement -> DisturbAngle
+gimbalDisturb lm = asin (lm/gimbalArmLength) * (360/(2*pi))
+    where gimbalArmLength = 0.2 -- 20cm
 
-gimbalS :: [Float]
-gimbalS = [0, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.01, 0, -0.03, 0.18]
+control :: ErrorAngle-> PwmSignal
+control e = k*(e/1.8)
+    where k = 0.3
+
+gimbalS :: [LinearMovement]
+gimbalS = take 50 [0.03, 0.03..]
 
 system :: Int -> PwmSignal
-system 0 = control $ gyro (gimbal 0) (servoMotor 0)
-system n = control (gyro (gimbal $ gimbalS!!n) (servoMotor $ system (n-1))) + system (n-1)
+system 0 = control $ gimbal (gimbalDisturb 0) (servoMotor 0)
+system n = control (gimbal (gimbalDisturb $ gimbalS!!n) (servoMotor $ system (n-1))) + system (n-1)
+
+gimbalDisturbP :: Signal LinearMovement -> Signal GimbalAngle
+gimbalDisturbP = mapSY gimbalDisturb -- combSY
+
+gimbalP :: Signal GimbalAngle -> Signal MotorAngle -> Signal GimbalAngle
+gimbalP = zipWithSY gimbal
+
+gyroP :: Signal GimbalAngle -> Signal GyroAngle 
+gyroP = mapSY gyro
+
+servoMotorP :: Signal PwmSignal -> Signal MotorAngle
+servoMotorP = mapSY servoMotor
+
+controlP :: Signal ErrorAngle-> Signal PwmSignal
+controlP = mapSY control
+
+delayP :: Signal Float -> Signal Float
+delayP = delaySY 0
+
+errorP :: Signal RefAngle -> Signal GyroAngle -> Signal ErrorAngle
+errorP = zipWithSY (-)
+
+sistemP sInput = sOutput
+    where sOutput = (iControl, sControl, dGyro, sError, sRef, sGimbalDist, sServo, sGimbal)
+          sControl = controlP sError
+          sError = errorP sRef dGyro 
+          dGyro = delayP sGyro
+          sRef = signal $ take (lengthS sInput) [0,0..]
+          sGyro = gyroP sGimbal
+          sGimbal = gimbalP sGimbalDist sServo
+          sGimbalDist = gimbalDisturbP sInput
+          sServo = servoMotorP iControl
+          iControl = mooreSY (+) (+0) 0 sControl
+
+
+ga = signal gimbalS
+(iControl, sControl, dGyro, sError, sRef, sGimbalDist, sServo, sGimbal)=sistemP ga
+pServo = d2aConverter DAlinear 1.0 sServo
+pGimbal= d2aConverter DAlinear 1.0 sGimbal
+pError = d2aConverter DAlinear 1.0 sError
+
+plotAll = plotCT' 100 [(pServo, "servo"), (pGimbal, "gimbal"), (pError, "error")]
