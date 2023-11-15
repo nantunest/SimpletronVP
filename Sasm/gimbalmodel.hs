@@ -3,6 +3,7 @@ import ForSyDe.Shallow
 type RefAngle = Float
 type MotorAngle = Float
 type GyroAngle = Float
+type GyroAngle' = Float
 type PwmSignal = Float
 type GimbalAngle = Float
 type DisturbAngle = Float
@@ -23,11 +24,11 @@ gimbalDisturb lm = asin (lm/gimbalArmLength) * (360/(2*pi))
     where gimbalArmLength = 0.2 -- 20cm
 
 control :: ErrorAngle-> PwmSignal
-control e = k*(e/1.8)
-    where k = 0.3
+control e = kp*(e/1.8)
+    where kp = 0.2
 
 gimbalS :: [LinearMovement]
-gimbalS = take 50 [0.03, 0.03..]
+gimbalS = take 20 [0.03, 0.03..] ++ take 30 [0.06, 0.06..]
 
 system :: Int -> PwmSignal
 system 0 = control $ gimbal (gimbalDisturb 0) (servoMotor 0)
@@ -39,26 +40,28 @@ gimbalDisturbP = mapSY gimbalDisturb -- combSY
 gimbalP :: Signal GimbalAngle -> Signal MotorAngle -> Signal GimbalAngle
 gimbalP = zipWithSY gimbal
 
-gyroP :: Signal GimbalAngle -> Signal GyroAngle 
-gyroP = mapSY gyro
+gyroP :: Signal GimbalAngle -> Signal GyroAngle'
+gyroP a = zipWithSY (-) a (delaySY 0 a)
 
 servoMotorP :: Signal PwmSignal -> Signal MotorAngle
 servoMotorP = mapSY servoMotor
 
-controlP :: Signal ErrorAngle-> Signal PwmSignal
+controlP :: Signal ErrorAngle -> Signal PwmSignal
 controlP = mapSY control
 
 delayP :: Signal Float -> Signal Float
 delayP = delaySY 0
 
+errorInteg :: Signal GyroAngle' -> Signal GyroAngle
+errorInteg = mooreSY (+) (+0) 0
+
 errorP :: Signal RefAngle -> Signal GyroAngle -> Signal ErrorAngle
-errorP = zipWithSY (-)
+errorP r g = zipWithSY (-) r (errorInteg g)
 
 sistemP sInput = sOutput
-    where sOutput = (iControl, sControl, dGyro, sError, sRef, sGimbalDist, sServo, sGimbal)
+    where sOutput = (iControl, sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sGyro)
           sControl = controlP sError
-          sError = errorP sRef dGyro 
-          dGyro = delayP sGyro
+          sError = errorP sRef sGyro
           sRef = signal $ take (lengthS sInput) [0,0..]
           sGyro = gyroP sGimbal
           sGimbal = gimbalP sGimbalDist sServo
@@ -68,9 +71,17 @@ sistemP sInput = sOutput
 
 
 ga = signal gimbalS
-(iControl, sControl, dGyro, sError, sRef, sGimbalDist, sServo, sGimbal)=sistemP ga
+(iControl, sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sGyro)=sistemP ga
 pServo = d2aConverter DAlinear 1.0 sServo
 pGimbal= d2aConverter DAlinear 1.0 sGimbal
 pError = d2aConverter DAlinear 1.0 sError
+pGimbalDist = d2aConverter DAlinear 1.0 sGimbalDist
+pGyro = d2aConverter DAlinear 1.0 sGyro
 
-plotAll = plotCT' 100 [(pServo, "servo"), (pGimbal, "gimbal"), (pError, "error")]
+plotAll = plotCT' 100 [(pServo, "servo"), 
+                       (pGimbal, "gimbal"),
+                       (pGyro, "gyro"),
+                       (pError, "error")
+                       ]
+
+plotGimbal = plotCT' 100 [(pGimbal, "gimbal")]
