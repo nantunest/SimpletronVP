@@ -15,8 +15,8 @@ SC_MODULE(Simpletron)
     enum State {FETCH, DECODE, EXEC, WRITE_BACK};
     State state = FETCH;
     
-    enum OpCodes {READ      = 0x01,
-                  WRITE     = 0x02,
+    enum OpCodes {SHL       = 0x01,
+                  SHR       = 0x02,
                   LOAD      = 0x03,
                   STORE     = 0x04,
                   ADD       = 0x05,
@@ -41,6 +41,17 @@ SC_MODULE(Simpletron)
     unsigned short operand_addr;
     unsigned short operand_data;
 
+    void shl()
+    {
+        std::cout << "EXECUTING SHL" << std::endl;
+        accumulator <<= operand_data; 
+    }
+
+    void shr()
+    { 
+        std::cout << "EXECUTING SHR" << std::endl;
+        accumulator >>= operand_data; 
+    }
 
     void load()
     {
@@ -77,7 +88,6 @@ SC_MODULE(Simpletron)
         accumulator -= static_cast<unsigned short>(data);
     }
 
-
     void div()
     {
         std::cout << "EXECUTING DIV" << std::endl;
@@ -89,7 +99,6 @@ SC_MODULE(Simpletron)
             halt();
         }
     }
-
 
     void mul()
     {
@@ -103,7 +112,6 @@ SC_MODULE(Simpletron)
 
         instruction_pointer = operand_addr; 
     }
-
 
     void bgz()
     {
@@ -124,22 +132,16 @@ SC_MODULE(Simpletron)
         }
     }
 
-    void write()
+    void sor()
     {
-        std::cout << "EXECUTING WRITE" << std::endl;
-        std::cout << "### CONSOLE: " << std::hex << operand_data << std::endl;
+        std::cout << "EXECUTING OR: " << accumulator << " - " << operand_data << std::endl;
+        accumulator |= static_cast<unsigned short>(data);
     }
 
-
-    void read()
-    { 
-        unsigned short data_out;
-        std::cout << "EXECUTING READ" << std::endl;
-        std::cout << " ### CONSOLE: ";
-        std::cin >> data_out;
-        i_we = true;
-        i_data = data_out;
-        i_address = operand_addr;
+    void sand()
+    {
+        std::cout << "EXECUTING OR: " << accumulator << " - " << operand_data << std::endl;
+        accumulator &= static_cast<unsigned short>(data);
     }
 
 
@@ -181,10 +183,15 @@ SC_MODULE(Simpletron)
             case BEZ:
                 bez();
                 break;
+            case SOR:
+                sor();
+                break;
+            case SAND:
+                sand();
+                break;
             case HALT:
                 halt();
                 break;
-
         }
         
     }
@@ -193,6 +200,7 @@ SC_MODULE(Simpletron)
     {
         i_we = false;
     }
+
     void print_internals()
     {
         std::cout << "Address: " << std::hex << i_address << std::endl;

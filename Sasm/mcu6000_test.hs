@@ -2,20 +2,16 @@ import Sasm
 
 romVarMap :: StaticVarMap
 romVarMap = [
-        StaticVar (Var "spi_shift"      $ romStaticAddr + 0) 0x05,
-        StaticVar (Var "spi_prescalar"  $ romStaticAddr + 1) 0x04,
-        StaticVar (Var "spi_cmd"        $ romStaticAddr + 2) 0x01,
-        StaticVar (Var "one"            $ romStaticAddr + 3) 1,
-        StaticVar (Var "busy_spi_init"  $ romStaticAddr + 4) 20,
-        StaticVar (Var "three"          $ romStaticAddr + 5) 3,
-        StaticVar (Var "finalAddress"   $ romStaticAddr + 6) 14
+        StaticVar (Var "spi_prescalar"  $ romStaticAddr + 0) 0x04,
+        StaticVar (Var "spi_cmd"        $ romStaticAddr + 1) 0x01,
+        StaticVar (Var "one"            $ romStaticAddr + 2) 1,
+        StaticVar (Var "three"          $ romStaticAddr + 3) 3,
+        StaticVar (Var "finalAddress"   $ romStaticAddr + 4) 14
     ]
 
 varMap :: VarMap
 varMap = [
-        Var "busySpi"           $ ramStartAddr + 0,
-        Var "toRead"            $ ramStartAddr + 1,
-        Var "spiReadAddress"    $ ramStartAddr + 2
+        Var "spiReadAddress"    $ ramStartAddr + 0
     ]
 
 -- 01 set spiPrescalar
@@ -32,7 +28,7 @@ mcu6000test = [
 
 -- 01 set spiPrescalar
     Instruction ""      LOAD    $ varAddress (fromRom romVarMap)    "spi_prescalar",
-    Instruction ""      STORE   $ varAddress registerMap            "spiPrescalar" ,
+    Instruction ""      STORE   $ varAddress registerMap            "spiPrescalar",
 
 -- 02 Set SpiShift to readAddress
     Instruction "spir"  LOAD    $ varAddress varMap                 "spiReadAddress",

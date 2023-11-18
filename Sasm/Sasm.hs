@@ -28,7 +28,7 @@ data StaticVar = StaticVar Var Address deriving (Show, Eq)
 assembleProgram ::  Program -> AssebledArray
 assembleProgram = map assembleInstruction
     where assembleInstruction (Instruction l i o) =  shiftL (instToOpCode i) 12 .|. o
-            where instToOpCode i = fromIntegral (fromEnum i + 1) :: Word16
+          instToOpCode i = fromIntegral (fromEnum i + 1) :: Word16
 
 assembleRomStatic :: StaticVarMap -> AssebledArray
 assembleRomStatic = map assembleStaticVar
@@ -37,9 +37,9 @@ assembleRomStatic = map assembleStaticVar
 assembleRom :: Program -> StaticVarMap -> AssebledArray
 assembleRom rvm p = assembleProgram rvm ++ fillGap ++ assembleRomStatic p
     where fillGap = replicate numOfWords 0
-            where numOfWords = wRomStaticAddr - progLen
-                    where progLen = length $ assembleProgram rvm
-                          wRomStaticAddr = fromInteger (toInteger romStaticAddr)
+          numOfWords = wRomStaticAddr - progLen
+          progLen = length $ assembleProgram rvm
+          wRomStaticAddr = fromInteger (toInteger romStaticAddr)
 
 writeAssembledToFile :: AssebledArray -> FilePath -> IO ()
 writeAssembledToFile a f = B.writeFile f $ runPut $ mapM_ putWord16le a
