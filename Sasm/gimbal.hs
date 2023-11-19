@@ -1,5 +1,6 @@
 import Sasm
 import Data.Binary ( Word16, encode )
+import GHC.CmmToAsm.X86.Instr (Instr(SHR))
 
 romVarMap :: StaticVarMap
 romVarMap = [
@@ -7,7 +8,8 @@ romVarMap = [
         StaticVar (Var "spi_cmd"        $ romStaticAddr + 1) 0x01,
         StaticVar (Var "one"            $ romStaticAddr + 2) 1,
         StaticVar (Var "three"          $ romStaticAddr + 3) 3,
-        StaticVar (Var "mpuReadSize"   $ romStaticAddr + 4) 12
+        StaticVar (Var "mpuReadSize"    $ romStaticAddr + 4) 12,
+        StaticVar (Var "eight"          $ romStaticAddr + 5) 8
     ]
 
 varMap :: VarMap
@@ -43,6 +45,10 @@ varMap = [
 ---- Calc control signal PWM %
 ---- Send control signal to the motor through pwm
 
+joinPrograms :: [Int -> Program] -> Int -> Program
+joinPrograms (p:ps) offset = p offset ++ joinPrograms ps (offset + length (p offset))
+joinPrograms [] _ = []
+
 setupMPU6000 :: Program
 setupMPU6000 = [
    -- Set spiPrescalar
@@ -50,44 +56,41 @@ setupMPU6000 = [
    Instruction ""      STORE   $ varAddress registerMap            "spiPrescalar"
   ]
 
-readMPU6000 :: Int -> Int -> Program
-readMPU6000 r s = [
+readMPU6000 :: Int -> Int -> Int -> Program
+readMPU6000 r s offset = [
 
    -- Set SpiShift to readAddress
    Instruction ""      LOAD      (fromIntegral r :: Word16),
-   Instruction ""      STORE    $ varAddress registerMap            "spiShift",
+   Instruction ""      STORE    $ varAddress registerMap                "spiShift",
 
    -- Set SpiCommand to read
-   Instruction ""      LOAD    $ varAddress (fromRom romVarMap)    "spi_cmd",
-   Instruction ""      STORE   $ varAddress registerMap            "spiCommand",
+   Instruction ""      LOAD    $ varAddress (fromRom romVarMap)         "spi_cmd",
+   Instruction ""      STORE   $ varAddress registerMap                 "spiCommand",
 
    -- Loop wait for DONE
-   Instruction "done"  LOAD    $ varAddress (fromRom romVarMap)    "three",
-   Instruction ""      SUB     $ varAddress registerMap            "spiState",
-   Instruction ""      BGZ     $ toLabel (readMPU6000 r s)         "done",
+   Instruction "done"  LOAD    $ varAddress (fromRom romVarMap)         "three",
+   Instruction ""      SUB     $ varAddress registerMap                 "spiState",
+   Instruction ""      BGZ     $ fromIntegral offset +
+                                 toLabel (readMPU6000 r s offset)       "done",
 
-   -- Read Shift
-   Instruction ""      LOAD    $ varAddress registerMap            "spiShift",
+   -- Read and store Shift
+   Instruction ""      LOAD    $ varAddress registerMap                 "spiShift",
+   Instruction ""      SSHR     $ varAddress (fromRom romVarMap)        "eight",
    Instruction ""      STORE     (fromIntegral s :: Word16)
    ]
 
-readMPU6000AccelXH :: Program
-readMPU6000AccelXH = readMPU6000 0x3B (fromIntegral (varAddress varMap "accelXH")) 
+readMPU6000Accel :: Int -> String -> Int -> Program
+readMPU6000Accel r l = readMPU6000 r (fromIntegral (varAddress varMap l))
 
-readMPU6000AccelXL :: Program
-readMPU6000AccelXL = readMPU6000 0x3C (fromIntegral (varAddress varMap "accelXL")) 
-
-readMPU6000AccelYH :: Program
-readMPU6000AccelYH = readMPU6000 0x3D (fromIntegral (varAddress varMap "accelYH")) 
-
-readMPU6000AccelYL :: Program
-readMPU6000AccelYL = readMPU6000 0x3E (fromIntegral (varAddress varMap "accelYL")) 
-
-readMPU6000AccelZH :: Program
-readMPU6000AccelZH = readMPU6000 0x3F (fromIntegral (varAddress varMap "accelZH")) 
-
-readMPU6000AccelZL :: Program
-readMPU6000AccelZL = readMPU6000 0x40 (fromIntegral (varAddress varMap "accelZL")) 
+readMPU6000AccelList :: [Int -> Program]
+readMPU6000AccelList = [
+    readMPU6000Accel 0x3B "accelXH",
+    readMPU6000Accel 0x3C "accelXL",
+    readMPU6000Accel 0x3D "accelYH",
+    readMPU6000Accel 0x3E "accelYL",
+    readMPU6000Accel 0x3F "accelZH",
+    readMPU6000Accel 0x40 "accelZL" 
+    ]
 
 gimbal :: Program
 gimbal = [

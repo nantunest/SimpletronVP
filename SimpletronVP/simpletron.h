@@ -150,11 +150,11 @@ SC_MODULE(Simpletron)
     {
         switch(opcode)
         {
-            case READ:
-                read();
+            case SOR:
+                sor();
                 break;
-            case WRITE:
-                write();
+            case SAND:
+                sand();
                 break;
             case LOAD:
                 load();
