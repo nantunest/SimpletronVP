@@ -8,6 +8,7 @@ import Data.Maybe ( fromJust )
 
 type Address = Word16
 type VarName = String
+type VarValue = Word16
 type Program = [Instruction]
 type VarMap  = [Var]
 type StaticVarMap = [StaticVar]
@@ -15,7 +16,7 @@ type AssebledArray = [Word16]
 type Register = (String, Address)
 type RegisterMap = [Register]
 
-data OpCode = SSHR | SSHL | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BGZ | BEZ | HALT | SOR | SAND
+data OpCode = SSHL | SSHR | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BGZ | BEZ | HALT | SOR | SAND
                   deriving (Enum, Show, Eq)
 
 data Instruction = Instruction String OpCode Address
@@ -23,7 +24,7 @@ data Instruction = Instruction String OpCode Address
 
 data Var = Var VarName Address deriving (Show, Eq)
 
-data StaticVar = StaticVar Var Address deriving (Show, Eq)
+data StaticVar = StaticVar VarName VarValue Address deriving (Show, Eq)
 
 assembleProgram ::  Program -> AssebledArray
 assembleProgram = map assembleInstruction
@@ -32,7 +33,7 @@ assembleProgram = map assembleInstruction
 
 assembleRomStatic :: StaticVarMap -> AssebledArray
 assembleRomStatic = map assembleStaticVar
-    where assembleStaticVar (StaticVar v w) = w :: Word16
+    where assembleStaticVar (StaticVar n v a) = v :: Word16
 
 assembleRom :: Program -> StaticVarMap -> AssebledArray
 assembleRom rvm p = assembleProgram rvm ++ fillGap ++ assembleRomStatic p
@@ -45,6 +46,13 @@ writeAssembledToFile :: AssebledArray -> FilePath -> IO ()
 writeAssembledToFile a f = B.writeFile f $ runPut $ mapM_ putWord16le a
 
 -- ASM Keywords
+
+resolveRomAddr :: [Address -> StaticVar] -> [StaticVar]
+resolveRomAddr m = zipWith ($) m (take  (length m) (map (+romStaticAddr) [0,1..]))
+
+resolveRamAddr:: [Address -> Var] -> [Var]
+resolveRamAddr m = zipWith ($) m (take  (length m) (map (+ramStartAddr) [0,1..]))
+
 
 toLabel :: Program -> String -> Word16
 toLabel p l = findAddressOf (lineWithLabel l) p :: Word16
@@ -59,7 +67,7 @@ varAddress vm n = addressOf $ variableWithName n
         variableWithName n = fromJust $ find (\(Var name a) -> name == n) vm
 
 fromRom :: [StaticVar] -> [Var]
-fromRom = map (\(StaticVar var val) -> var)
+fromRom = map (\(StaticVar n v a) -> Var n a)
 
 
 -- Memory addresses definitions

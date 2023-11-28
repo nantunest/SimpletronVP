@@ -94,6 +94,7 @@ SC_MODULE(Simpletron)
 
         if (data != 0){
             accumulator /= operand_data;
+            std::cout << "Division Result: " << accumulator << std::endl;
         } else {
             std::cout << "Error: Division by zero"; 
             halt();
@@ -183,11 +184,11 @@ SC_MODULE(Simpletron)
             case BEZ:
                 bez();
                 break;
-            case SOR:
-                sor();
+            case SHL:
+                shl();
                 break;
-            case SAND:
-                sand();
+            case SHR:
+                shr();
                 break;
             case HALT:
                 halt();
@@ -279,7 +280,8 @@ SC_MODULE(Simpletron)
                         set_defaults();
 
                         if (opcode == LOAD || opcode == ADD || opcode == SUB
-                         || opcode == DIV  || opcode == MUL || opcode == WRITE
+                         || opcode == DIV  || opcode == MUL || opcode == SOR
+                         || opcode == SAND || opcode == SHR || opcode == SHL
                          )
                         {
                             i_address = operand_addr;

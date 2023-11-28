@@ -5,6 +5,10 @@ clean:
 	rm -rf *.hi
 	rm -rf *.o
 
+clean_%: $(OBJS)
+	@echo $@
+	rm $(subst clean_,,$@)
+
 %: $(OBJS)
 	@echo $@
 	ghc -o $@ $@.hs 

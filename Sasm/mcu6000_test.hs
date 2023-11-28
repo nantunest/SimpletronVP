@@ -1,17 +1,17 @@
 import Sasm
 
 romVarMap :: StaticVarMap
-romVarMap = [
-        StaticVar (Var "spi_prescalar"  $ romStaticAddr + 0) 0x04,
-        StaticVar (Var "spi_cmd"        $ romStaticAddr + 1) 0x01,
-        StaticVar (Var "one"            $ romStaticAddr + 2) 1,
-        StaticVar (Var "three"          $ romStaticAddr + 3) 3,
-        StaticVar (Var "finalAddress"   $ romStaticAddr + 4) 14
+romVarMap = resolveRomAddr [
+        StaticVar "spi_prescalar" 0x04,
+        StaticVar "spi_cmd"       0x01,
+        StaticVar "one"           1,
+        StaticVar "three"         3,
+        StaticVar "finalAddress"  14
     ]
 
 varMap :: VarMap
-varMap = [
-        Var "spiReadAddress"    $ ramStartAddr + 0
+varMap = resolveRamAddr [
+        Var "spiReadAddress"
     ]
 
 -- 01 set spiPrescalar

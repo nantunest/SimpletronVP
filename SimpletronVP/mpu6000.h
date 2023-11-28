@@ -55,6 +55,8 @@ SC_MODULE(Mpu6000)
     static constexpr int B_n = 8;
     static constexpr int B_1 = 1;
 
+    static constexpr int base_addr = 0x3B;
+
     void write_bit()
     {
         miso = static_cast<bool>(shift_reg & B_1);
@@ -78,8 +80,8 @@ SC_MODULE(Mpu6000)
                 if (shift_counter >= B_n)
                 { 
                     shift_counter = 0;
-                    std::cout << "[MPU6000]: shift_reg = " << shift_reg <<" " << "content = " << register_bank[shift_reg] << std::endl; 
-                    shift_reg = register_bank[shift_reg];
+                    std::cout << "[MPU6000]: shift_reg = " << shift_reg <<" " << "content = " << register_bank[shift_reg - base_addr] << std::endl; 
+                    shift_reg = register_bank[shift_reg - base_addr];
                 }
                 // else
                 // {

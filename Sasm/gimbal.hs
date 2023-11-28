@@ -1,41 +1,40 @@
 import Sasm
 import Data.Binary ( Word16, encode )
-import GHC.CmmToAsm.X86.Instr (Instr(SHR))
 
-romVarMap :: StaticVarMap
-romVarMap = [
-        StaticVar (Var "spi_prescalar"  $ romStaticAddr + 0) 0x04,
-        StaticVar (Var "spi_cmd"        $ romStaticAddr + 1) 0x01,
-        StaticVar (Var "one"            $ romStaticAddr + 2) 1,
-        StaticVar (Var "three"          $ romStaticAddr + 3) 3,
-        StaticVar (Var "mpuReadSize"    $ romStaticAddr + 4) 12,
-        StaticVar (Var "eight"          $ romStaticAddr + 5) 8
+type FunctionCall = Address -> Program
+
+romVarMap :: [StaticVar]
+romVarMap = resolveRomAddr [
+        StaticVar "spi_prescalar"  0x04,
+        StaticVar "spi_cmd"        0x01,
+        StaticVar "one"            1,
+        StaticVar "three"          3,
+        StaticVar "mpuReadSize"    12,
+        StaticVar "eight"          8,
+        StaticVar "accelXHaddr"    0x3B,
+        StaticVar "accelXLaddr"    0x3C,
+        StaticVar "gyroXHaddr"     0x43,
+        StaticVar "gyroXLaddr"     0x44
     ]
 
-varMap :: VarMap
-varMap = [
-        Var "spiReadAddress"    $ ramStartAddr + 0,
+varMap :: [Var]
+varMap = resolveRamAddr [
+        Var "spiReadAddress",
 
-        Var "accelXH"           $ ramStartAddr + 1,
-        Var "accelXL"           $ ramStartAddr + 2,
-        Var "accelYH"           $ ramStartAddr + 3,
-        Var "accelYL"           $ ramStartAddr + 4,
-        Var "accelZH"           $ ramStartAddr + 5,
-        Var "accelZL"           $ ramStartAddr + 6,
+        Var "accelXH",
+        Var "accelXL",
+        Var "gyroXH",
+        Var "gyroXL",
 
-        Var "gyroXH"            $ ramStartAddr + 7,
-        Var "gyroXL"            $ ramStartAddr + 8,
-        Var "gyroYH"            $ ramStartAddr + 9,
-        Var "gyroYL"            $ ramStartAddr + 10,
-        Var "gyroZH"            $ ramStartAddr + 11,
-        Var "gyroZL"            $ ramStartAddr + 12,
+        Var "accelX",
+        Var "gyroX",
 
-        Var "accelX"            $ ramStartAddr + 13,
-        Var "accelY"            $ ramStartAddr + 14,
-        Var "accelZ"            $ ramStartAddr + 15,
-        Var "gyroX"             $ ramStartAddr + 16,
-        Var "gyroY"             $ ramStartAddr + 17,
-        Var "gyroZ"             $ ramStartAddr + 18
+        Var "intAccelX",
+        Var "intGyroX",
+
+        Var "filtAccelX",
+        Var "filtGyroX",
+        Var "sensorAngle"
     ]
 
 -- Loop:
@@ -45,9 +44,9 @@ varMap = [
 ---- Calc control signal PWM %
 ---- Send control signal to the motor through pwm
 
-joinPrograms :: [Int -> Program] -> Int -> Program
-joinPrograms (p:ps) offset = p offset ++ joinPrograms ps (offset + length (p offset))
-joinPrograms [] _ = []
+joinFunctionCalls :: [FunctionCall] -> Int -> Program
+joinFunctionCalls (p:ps) offset = p (fromIntegral offset) ++ joinFunctionCalls ps (offset + length (p (fromIntegral offset)))
+joinFunctionCalls [] _ = []
 
 setupMPU6000 :: Program
 setupMPU6000 = [
@@ -56,14 +55,14 @@ setupMPU6000 = [
    Instruction ""      STORE   $ varAddress registerMap            "spiPrescalar"
   ]
 
-readMPU6000 :: Int -> Int -> Int -> Program
-readMPU6000 r s offset = [
+readMPU6000 :: String -> String -> Address -> Program
+readMPU6000 readAddr storeAddr offset = [
 
-   -- Set SpiShift to readAddress
-   Instruction ""      LOAD      (fromIntegral r :: Word16),
+   -- Set MPU6000 address to read
+   Instruction ""      LOAD     $ varAddress (fromRom romVarMap)        readAddr,
    Instruction ""      STORE    $ varAddress registerMap                "spiShift",
 
-   -- Set SpiCommand to read
+   -- Start SPI read
    Instruction ""      LOAD    $ varAddress (fromRom romVarMap)         "spi_cmd",
    Instruction ""      STORE   $ varAddress registerMap                 "spiCommand",
 
@@ -71,30 +70,67 @@ readMPU6000 r s offset = [
    Instruction "done"  LOAD    $ varAddress (fromRom romVarMap)         "three",
    Instruction ""      SUB     $ varAddress registerMap                 "spiState",
    Instruction ""      BGZ     $ fromIntegral offset +
-                                 toLabel (readMPU6000 r s offset)       "done",
+                                 toLabel
+                                (readMPU6000 readAddr storeAddr offset) "done",
 
    -- Read and store Shift
    Instruction ""      LOAD    $ varAddress registerMap                 "spiShift",
-   Instruction ""      SSHR     $ varAddress (fromRom romVarMap)        "eight",
-   Instruction ""      STORE     (fromIntegral s :: Word16)
+   Instruction ""      SSHR    $ varAddress (fromRom romVarMap)         "eight",
+   Instruction ""      STORE   $ varAddress varMap                      storeAddr 
    ]
 
-readMPU6000Accel :: Int -> String -> Int -> Program
-readMPU6000Accel r l = readMPU6000 r (fromIntegral (varAddress varMap l))
-
-readMPU6000AccelList :: [Int -> Program]
-readMPU6000AccelList = [
-    readMPU6000Accel 0x3B "accelXH",
-    readMPU6000Accel 0x3C "accelXL",
-    readMPU6000Accel 0x3D "accelYH",
-    readMPU6000Accel 0x3E "accelYL",
-    readMPU6000Accel 0x3F "accelZH",
-    readMPU6000Accel 0x40 "accelZL" 
+readMPU6000calls :: [FunctionCall]
+readMPU6000calls = [
+    readMPU6000 "accelXHaddr" "accelXH",
+    readMPU6000 "accelXLaddr" "accelXL",
+    readMPU6000 "gyroXHaddr"  "gyroXH",
+    readMPU6000 "gyroXLaddr"  "gyroXL"
     ]
 
-gimbal :: Program
-gimbal = [
+readMPU6000registers :: Program
+readMPU6000registers = joinFunctionCalls readMPU6000calls (length setupMPU6000)
+
+highLowToValue :: String -> String -> String -> Program
+highLowToValue h l v = [
+    Instruction ""  LOAD  $ varAddress varMap                h,
+    Instruction ""  SSHL  $ varAddress (fromRom romVarMap)   "eight",
+    Instruction ""  SOR   $ varAddress varMap                l,
+    Instruction ""  STORE $ varAddress varMap                v
     ]
+
+highLowToValueCalls :: [Program]
+highLowToValueCalls = [
+    highLowToValue "accelXH" "accelXL" "accelX",
+    highLowToValue "gyroXH" "gyroXL" "gyroX"
+    ]
+
+calcSensorsVal :: [Instruction]
+calcSensorsVal = concat highLowToValueCalls
+
+integrateVal :: String -> String -> Program
+integrateVal var ivar = [
+    Instruction ""  LOAD    $ varAddress varMap    ivar,
+    Instruction ""  ADD     $ varAddress varMap    var,
+    Instruction ""  STORE   $ varAddress varMap    ivar
+    ]
+
+integrateValCalls :: [Program]
+integrateValCalls = [
+    integrateVal "accelX" "intAccelX",
+    integrateVal "gyroX" "intGyroX"
+    ]
+
+integrateSensors :: [Instruction]
+integrateSensors = concat integrateValCalls
+
+gimbal :: [Instruction]
+gimbal = setupMPU6000
+         ++ readMPU6000registers
+         ++ calcSensorsVal 
+         ++ integrateSensors
+         ++ [
+            Instruction "" LOAD $ varAddress varMap "accelX",
+            Instruction "" JMP $ fromIntegral (length gimbal - 1)]
 
 main :: IO ()
 main = writeAssembledToFile (assembleRom gimbal romVarMap) "gimbal.hex"
