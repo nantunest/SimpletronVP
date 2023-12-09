@@ -1,5 +1,7 @@
 import Sasm
 import Data.Binary ( Word16, encode )
+import GHC.Core.Utils (scaleAltsBy)
+import GHC (GhcException(ProgramError))
 
 type FunctionCall = Address -> Program
 
@@ -14,7 +16,8 @@ romVarMap = resolveRomAddr [
         StaticVar "accelXHaddr"    0x3B,
         StaticVar "accelXLaddr"    0x3C,
         StaticVar "gyroXHaddr"     0x43,
-        StaticVar "gyroXLaddr"     0x44
+        StaticVar "gyroXLaddr"     0x44,
+        StaticVar "MPUdiv"         131
     ]
 
 varMap :: [Var]
@@ -28,12 +31,19 @@ varMap = resolveRamAddr [
 
         Var "accelX",
         Var "gyroX",
+        
+        Var "accelX",
+        Var "gyroX",
+
+        Var "accelXFiP6",
+        Var "gyroXFiP6",
 
         Var "intAccelX",
         Var "intGyroX",
 
         Var "filtAccelX",
         Var "filtGyroX",
+
         Var "sensorAngle"
     ]
 
@@ -104,8 +114,31 @@ highLowToValueCalls = [
     highLowToValue "gyroXH" "gyroXL" "gyroX"
     ]
 
-calcSensorsVal :: [Instruction]
-calcSensorsVal = concat highLowToValueCalls
+concatHighLow :: [Instruction]
+concatHighLow = concat highLowToValueCalls
+
+divideByConvFactor :: String -> String -> Program
+divideByConvFactor iVar oVar = [
+       -- Divide fromMPU by the MPU6000 conv. factor for +-250 - integral part
+        Instruction "" LOAD     $ varAddress (fromRom romVarMap) "fromMPU",
+        Instruction "" DIV      $ varAddress (fromRom romVarMap) "MPUdiv",
+        Instruction "" STORE    $ varAddress varMap "gyroAngleDegQ"
+    ]
+
+calcReminder :: Program
+calcReminder = []
+
+scaleIntegralPart :: Program
+scaleIntegralPart = []
+
+scaleFracPart :: Program
+scaleFracPart = []
+
+scaleToFiP6 :: String -> String -> Program
+scaleToFiP6 iVar oVar =  divideByConvFactor iVar oVar
+                  ++ calcReminder
+                  ++ scaleIntegralPart
+                  ++ scaleFracPart
 
 integrateVal :: String -> String -> Program
 integrateVal var ivar = [
@@ -113,6 +146,7 @@ integrateVal var ivar = [
     Instruction ""  ADD     $ varAddress varMap    var,
     Instruction ""  STORE   $ varAddress varMap    ivar
     ]
+
 
 integrateValCalls :: [Program]
 integrateValCalls = [
@@ -126,7 +160,8 @@ integrateSensors = concat integrateValCalls
 gimbal :: [Instruction]
 gimbal = setupMPU6000
          ++ readMPU6000registers
-         ++ calcSensorsVal 
+         ++ concatHighLow 
+         ++ scaleToFiP6 "accelX" "accelFiP6"
          ++ integrateSensors
          ++ [
             Instruction "" LOAD $ varAddress varMap "accelX",
