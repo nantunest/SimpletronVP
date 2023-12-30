@@ -66,9 +66,17 @@ varAddress vm n = addressOf $ variableWithName n
         addressOf (Var name a) = a
         variableWithName n = fromJust $ find (\(Var name a) -> name == n) vm
 
-fromRom :: [StaticVar] -> [Var]
-fromRom = map (\(StaticVar n v a) -> Var n a)
+getVar :: [StaticVar] -> [Var]
+getVar = map (\(StaticVar n v a) -> Var n a)
 
+fromRegMap :: p -> p
+fromRegMap x = x
+
+valFromAddressOf :: VarName -> VarMap -> Address
+valFromAddressOf n m = varAddress m n
+
+valToAddressOf ::  VarName -> VarMap -> Address
+valToAddressOf n m = varAddress m n
 
 -- Memory addresses definitions
 
