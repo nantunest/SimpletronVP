@@ -18,37 +18,47 @@ romVarDecl = resolveRomAddr [
         StaticVar "gyroXHaddr"     0x43,
         StaticVar "gyroXLaddr"     0x44,
         StaticVar "MPUdiv"         131,
-        StaticVar "fpScale"        6
+        StaticVar "fpScale"        6,
+        StaticVar "gyroFiltFiP6"   57, -- 0.9 in fixed point 6
+        StaticVar "accelFiltFiP6"  7,  -- 0.1 in fixed point 6
     ]
 
 ramVarDecl :: VarMap
 ramVarDecl = resolveRamAddr [
         Var "spiReadAddress",
 
-        Var "accelXH",
-        Var "accelXL",
+--        Var "accelXH",
+--        Var "accelXL",
+
+        -- MPU6000 drive
         Var "gyroXH",
         Var "gyroXL",
+        ----------------
 
-        Var "accelX",
-        Var "gyroX",
+        -- Var "accelXfromMPU",
 
+        -- Signals:
+        Var "sGyro",
+        Var "sPos"
+        Var "sControl"
+        Var "sError"
+        Var "sRef"
+        Var "sServoDrive"
+        -------------------
+
+        -- Fixed Point Conversion:
         Var "mulTemp",
-        Var "gyroXQ",
-        Var "gyroXR",
-        Var "accelXQ",
-        Var "accelXR",
+        Var "qtemp",
+        Var "rtemp",
+        --------------------------
 
-        Var "gyroXQscaled",
-        Var "gyroXRscaled",
-
-        Var "accelXFiP6",
+        -- Var "accelXFiP6",
         Var "gyroXFiP6",
 
-        Var "intAccelX",
-        Var "intGyroX",
+        -- Var "intAccelXFiP6",
+        Var "intGyroXFiP6",
 
-        Var "filtAccelX",
+        -- Var "filtAccelX",
         Var "filtGyroX",
 
         Var "sensorAngle"
@@ -105,10 +115,16 @@ readMPU6000 readAddr storeAddr offset = [
    Instruction ""      STORE   $ valToAddressOf     storeAddr       ramVarDecl 
    ]
 
+readMPU6000Gyro :: Address -> Program
+readMPU6000Gyro offset =  readGyroHigh ++ readGyroLow ++ joinHighLow
+                            where readGyroHigh = readMPU6000 "gyroXHaddr" "gyroXH" offset
+                                  readGyroLow = readMPU6000 "gyroXLaddr"  "gyroXL" $ (length readGyroHigh) + offset
+                                  joinHighLow = highLowToValue "gyroXH" "gyroXL" "gyroX"
+
 readMPU6000calls :: [FunctionCall]
 readMPU6000calls = [
-    readMPU6000 "accelXHaddr" "accelXH",
-    readMPU6000 "accelXLaddr" "accelXL",
+--    readMPU6000 "accelXHaddr" "accelXH",
+--    readMPU6000 "accelXLaddr" "accelXL",
     readMPU6000 "gyroXHaddr"  "gyroXH",
     readMPU6000 "gyroXLaddr"  "gyroXL"
     ]
@@ -126,94 +142,51 @@ highLowToValue h l v = [
 
 highLowToValueCalls :: [Program]
 highLowToValueCalls = [
-    highLowToValue "accelXH" "accelXL" "accelX",
+    -- highLowToValue "accelXH" "accelXL" "accelX",
     highLowToValue "gyroXH" "gyroXL" "gyroX"
     ]
 
 concatHighLow :: [Instruction]
 concatHighLow = concat highLowToValueCalls
 
-divideByConvFactor :: String -> String -> String -> Program
-divideByConvFactor valFromMPU divResult conv = [
-       -- Divide valFromMPU by conv, store div result in divResult
-       -- divResult = valFromMPU / conv
-        Instruction "" LOAD     $ valFromAddressOf  valFromMPU inRam,
-        Instruction "" DIV      $ valFromAddressOf  conv inRom,
-        Instruction "" STORE    $ valToAddressOf    divResult inRam
-    ]
-
-calcReminder :: String -> String -> String -> String -> Program
-calcReminder divResult valFromMPU conv divReminder = [
-        -- divReminder = valFromMPU - divResult*conv
-        Instruction "" LOAD     $ valFromAddressOf divResult inRam,
-        Instruction "" MUL      $ valFromAddressOf conv inRom,
-        Instruction "" STORE    $ valToAddressOf "mulTemp" inRam,
-        Instruction "" LOAD     $ valFromAddressOf valFromMPU inRam,
-        Instruction "" SUB      $ valFromAddressOf "mulTemp" inRam,
-        Instruction "" STORE    $ valToAddressOf divReminder inRam
-        ]
-
-scaleIntegralPart :: String -> String-> String -> Program
-scaleIntegralPart divResult scale resultScaled = [
-        -- resultScaled = divResult << scale
-        Instruction "" LOAD     $ valFromAddressOf divResult    inRam,
-        Instruction "" SSHL     $ valFromAddressOf scale        inRom,
-        Instruction "" STORE    $ valToAddressOf resultScaled   inRam
-        ]
-
-scaleFracPart :: String -> String -> String -> String -> Program
-scaleFracPart divReminder fpScale conv fracScaled  = [
-        -- fracScaled = divReminder << fpScale
-        Instruction "" LOAD     $ valFromAddressOf divReminder  inRam,
-        Instruction "" SSHL     $ valFromAddressOf fpScale      inRom,
-        Instruction "" DIV      $ valFromAddressOf conv         inRom,
-        Instruction "" STORE    $ valFromAddressOf fracScaled   inRam
-        ]
-
-assembleFiP6 :: String -> String -> String -> Program
-assembleFiP6 i f fip6 = [
-    -- fip6 = i | f
-    Instruction "" LOAD     $ valFromAddressOf f inRam,
-    Instruction "" SOR      $ valFromAddressOf i inRam,
-    Instruction "" STORE    $ valFromAddressOf fip6 inRam
-    ]
-
-scaleToFiP6 :: Program
-scaleToFiP6 = divideByConvFactor    "gyroX"  "gyroXQ"  "MPUdiv"
-            ++ calcReminder         "gyroXQ" "gyroX"   "MPUdiv"     "gyroXR"
-            ++ scaleIntegralPart    "gyroXQ" "fpScale" "gyroXQscaled"
-            ++ scaleFracPart        "gyroXR" "fpScale" "MPUdiv"     "gyroXRscaled"
-            ++ assembleFiP6         "gyroXQscaled"  "gyroXRscaled" "gyroXFip6"
-
 -- Alternative to scaleToFiP6
-convToFiP6 :: String-> String-> String -> String -> String -> String -> Program
-convToFiP6 fromMPU conv q r scale fip6 = [
+scaleToFiP6:: String-> String -> String -> String -> Program
+scaleToFiP6 fromMPU conv scale fip6 = [
 
-        -- Divide fromMPU by the MPU6000 conv. factor for +-250 - integral part
+        -- calc quotient of division
+        -- q = fromMPU / conv
         Instruction "" LOAD     $ valFromAddressOf  fromMPU         inRom,
         Instruction "" DIV      $ valFromAddressOf  conv            inRom,
-        Instruction "" STORE    $ valToAddressOf    q               inRam,
+        Instruction "" STORE    $ valToAddressOf    "qtemp"         inRam,
 
         -- Calc the reminder of division
+        -- r = fromMPU - q*conv
         Instruction "" MUL      $ valFromAddressOf  conv            inRom,
         Instruction "" STORE    $ valToAddressOf    "mulTemp"       inRam,
         Instruction "" LOAD     $ valFromAddressOf  fromMPU         inRom,
         Instruction "" SUB      $ valFromAddressOf  "mulTemp"       inRam,
-        Instruction "" STORE    $ valToAddressOf    r               inRam,
+        Instruction "" STORE    $ valToAddressOf    "rtemp"         inRam,
 
         -- Scale integral part to Fixed Point scaled
-        Instruction "" LOAD     $ valFromAddressOf q                inRam,
+        -- fip6 = q << scale
+        Instruction "" LOAD     $ valFromAddressOf "qtemp"          inRam,
         Instruction "" SSHL     $ valFromAddressOf scale            inRom,
         Instruction "" STORE    $ valToAddressOf   fip6             inRam,
 
-        -- Calc reminder scaled to FiP6 and store with gyroAngleFiP6
-        Instruction "" LOAD     $ valFromAddressOf r                inRam,
+        -- Calc reminder scaled to FiP6 and store with fip6 result 
+        -- fip6 = fip6 | ((r << fpScale) / conv)
+        Instruction "" LOAD     $ valFromAddressOf "rtemp"          inRam,
         Instruction "" SSHL     $ valFromAddressOf scale            inRom,
         Instruction "" DIV      $ valFromAddressOf conv             inRom,
         Instruction "" SOR      $ valFromAddressOf fip6             inRam,
         Instruction "" STORE    $ valToAddressOf   fip6             inRam
         ]
 
+scaleToFip6Calls :: [Program]
+scaleToFip6Calls = [
+    scaleToFiP6 "sGyro" "MPUdiv" "fpScale" "gyroXFiP6",
+--    scaleToFiP6 "accelXfromMPU" "MPUdiv" "fpScale" "accelXFiP6"
+    ]
 
 integrateVal :: String -> String -> Program
 integrateVal var ivar = [
@@ -222,25 +195,38 @@ integrateVal var ivar = [
     Instruction ""  STORE   $ varAddress ramVarDecl    ivar
     ]
 
-
 integrateValCalls :: [Program]
 integrateValCalls = [
-    integrateVal "accelX" "intAccelX",
-    integrateVal "gyroX" "intGyroX"
+    integrateVal "gyroXFiP6" "intGyroXFiP6",
+    integrateVal "accelXFiP6" "intAccelXFiP6"
     ]
+
+
+readMPU6000sensors :: [Instruction]
+readMPU6000sensors = readMPU6000registers ++ concatHighLow
+
+convertToFixedPoint :: [Instruction]
+convertToFixedPoint = concat scaleToFip6Calls
 
 integrateSensors :: [Instruction]
 integrateSensors = concat integrateValCalls
 
+filterSensors :: [Instruction]
+filterSensors = []
+
+updateActuator :: [Instruction]
+updateActuator = []
+
+u
+
 gimbal :: [Instruction]
-gimbal = setupMPU6000
-         ++ readMPU6000registers
-         ++ concatHighLow 
-         ++ scaleToFiP6
-         ++ integrateSensors
-         ++ [
-            Instruction "" LOAD $ varAddress ramVarDecl "accelX",
-            Instruction "" JMP $ fromIntegral (length gimbal - 1)]
+gimbal =  setupMPU6000
+       ++ readMPU6000sensors
+       ++ convertToFixedPoint 
+       ++ integrateSensors
+       ++ [
+          Instruction "" LOAD $ varAddress ramVarDecl "accelX",
+          Instruction "" JMP $ fromIntegral (length gimbal - 1)]
 
 main :: IO ()
 main = writeAssembledToFile (assembleRom gimbal romVarDecl) "gimbal.hex"

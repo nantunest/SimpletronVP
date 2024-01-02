@@ -57,4 +57,4 @@ fixedPointTest = [
     ]
 
 main :: IO ()
-main = writeAssembledToFile (assembleRom fixedPointTest romVarMap) "fixed_point_test.hex"
+main = writeAssembledToFile (assembleRom fixedPointTest romVarDecl) "fixed_point_test.hex"
