@@ -29,7 +29,7 @@ SC_MODULE(Pwm)
         if (ce)
         {
             // Configuration
-            if (address == status_addr){
+            if (address == status_addr) {
                 if (data == 0x01){
                     reg_status = data;
                     out = true;

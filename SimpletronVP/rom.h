@@ -18,11 +18,11 @@ SC_MODULE(Rom)
     {
         if (ce) {
             const unsigned short memory_address = address - base_address;
-            std::cout << "[ROM]: read address = " << memory_address <<  std::endl;
+            // std::cout << "[ROM]: read address = " << memory_address <<  std::endl;
 
             if (memory_address < size)
             {
-                std::cout << "[ROM]: reading " << memory[memory_address] << " from " << memory_address << std::endl;
+                // std::cout << "[ROM]: reading " << memory[memory_address] << " from " << memory_address << std::endl;
                 data = memory[memory_address];
             }
         }
@@ -33,7 +33,7 @@ SC_MODULE(Rom)
         for (unsigned short i = 0; i < prog.size(); i++)
         {
             memory[i] = prog[i];
-            std::cout << "ROM[" << i << "]" << " = " << memory[i] << std::endl;
+            // std::cout << "ROM[" << i << "]" << " = " << memory[i] << std::endl;
         }
     }
 

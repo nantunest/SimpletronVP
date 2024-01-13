@@ -1,5 +1,6 @@
 #pragma once
 #include <systemc.h>
+#include <experimental/array>
 
 /*
 //----------------------------------------------------------------//
@@ -36,9 +37,9 @@ SC_MODULE(Mpu6000)
         ACCEL_YOUT_L, 
         ACCEL_ZOUT_H, 
         ACCEL_ZOUT_L, 
-        TEMP_OUT_H, 
-        TEMP_OUT_L, 
-        GYRO_XOUT_H, 
+        TEMP_OUT_H,
+        TEMP_OUT_L,
+        GYRO_XOUT_H,
         GYRO_XOUT_L, 
         GYRO_YOUT_H, 
         GYRO_YOUT_L, 
@@ -47,7 +48,10 @@ SC_MODULE(Mpu6000)
         SIZE
     };
 
-    std::array<unsigned short, RegisterAddr::SIZE> register_bank = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE};
+    std::array<short,200> gyro_x_out = std::array<short,200> {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,38,0,-9,-8,-5,-4,-3,-2,-2,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-38,0,9,8,5,4,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,38,0,-9,-8,-5,-4,-3,-2,-2,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-39,0,10,8,5,4,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    unsigned int gyro_x_out_cnt = 0;
+
+    std::array<unsigned short, RegisterAddr::SIZE> register_bank = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0, 0, 0xAB, 0xAC, 0xAD, 0xAE};
 
     unsigned char shift_counter = 0;
     unsigned char shift_reg = 0x00;
@@ -79,8 +83,19 @@ SC_MODULE(Mpu6000)
                 shift();
                 if (shift_counter >= B_n)
                 { 
+                    auto _addr = shift_reg - base_addr;
+
+                    if (_addr == RegisterAddr::GYRO_XOUT_H)
+                    {
+                        this->register_bank[RegisterAddr::GYRO_XOUT_H] = (this->gyro_x_out[this->gyro_x_out_cnt] & 0xFF00) >> 8;
+                    }
+                    else if (_addr == RegisterAddr::GYRO_XOUT_L)
+                    {
+                        this->register_bank[RegisterAddr::GYRO_XOUT_L] = this->gyro_x_out[this->gyro_x_out_cnt++] & 0xFF;
+                    }
+
                     shift_counter = 0;
-                    std::cout << "[MPU6000]: shift_reg = " << shift_reg <<" " << "content = " << register_bank[shift_reg - base_addr] << std::endl; 
+                    std::cout << "[MPU6000]: shift_reg = " << shift_reg <<" " << "content = " << register_bank[_addr] << std::endl; 
                     shift_reg = register_bank[shift_reg - base_addr];
                 }
                 // else

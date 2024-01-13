@@ -59,13 +59,13 @@ controlP :: Signal ErrorAngle -> Signal PwmSignal
 --           ki = 1
 controlP e = zipWithSY (+) (propCtrl e) (integCtrl e)
     where propCtrl = zipWithSY (*) kp
-          integCtrl = zipWithSY (*) ki . integP 
+          integCtrl = zipWithSY (*) ki . integP
           kp = signal [0.25, 0.25..]
           ki = signal [0.2,0.2..]
 
--- o = sig/360*100
+-- o = sig/180*100
 servoDriveP :: Signal Float -> Signal Float
-servoDriveP c = zipWithSY (/) c $ signal [1.8,1.8..]  
+servoDriveP c = zipWithSY (/) c $ signal [1.8,1.8..]
 
 delayP :: Signal Float -> Signal Float
 delayP = delaySY 0
@@ -77,11 +77,12 @@ errorP :: Signal RefAngle -> Signal GyroAngle -> Signal ErrorAngle
 errorP = zipWithSY (-)
 
 sistemP sInput = sOutput
-    where sOutput = (sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sPos, sGyro, sServoDrive)
+    where sOutput = (sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sPos, sVel, sGyro, sServoDrive)
           sControl = controlP sError
           sError = errorP sRef sPos
           sRef = signal $ take (lengthS sInput) [0,0..]
-          sPos = integP . integP $ sGyro
+          sPos = integP sVel
+          sVel = integP sGyro
           sGyro = gyroP sGimbal
           sGimbal = gimbalP sGimbalDist sServo
           sGimbalDist = gimbalDisturbP sInput
@@ -90,7 +91,7 @@ sistemP sInput = sOutput
 
 
 ga = signal gimbalS
-(sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sPos, sGyro, sServoDrive)=sistemP ga
+(sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sPos, sVel, sGyro, sServoDrive)=sistemP ga
 pServo = d2aConverter DAlinear 1.0 sServo
 pGimbal= d2aConverter DAlinear 1.0 sGimbal
 pError = d2aConverter DAlinear 1.0 sError
@@ -99,8 +100,9 @@ pGyro = d2aConverter DAlinear 1.0 sGyro
 pPos = d2aConverter DAlinear 1.0 sPos
 pRef = d2aConverter DAlinear 1.0 sRef
 pControl = d2aConverter DAlinear 1.0 sControl
-
 pServoDrive = d2aConverter DAlinear 1.0 sServoDrive
+pVel = d2aConverter DAlinear 1.0 sVel
+
 
 plotAll = plotCT' 100 [(pError, "error"),
                        (pControl, "control"),
@@ -108,5 +110,14 @@ plotAll = plotCT' 100 [(pError, "error"),
                        (pGimbalDist, "disturbance"),
                        (pServoDrive, "pwmDC")]
 
+gs :: Signal (SubsigCT LinearMovement)
 gs = d2aConverter DAlinear 1.0 $ signal gimbalS
-plotSingle = plotCT' 200 [(pPos, "pos")]
+
+plotSingle :: IO String
+plotSingle = plotCT' 200 [(pVel, "vel")]
+
+writeSigToFile :: FilePath -> Signal Float -> IO ()
+writeSigToFile f s = writeFile f $ concatMap ((show . (++ ",")) . show) (fromSignal s)
+
+sigToStr :: Signal Float -> String
+sigToStr s = concatMap ((++ ",") . show . round . (*131)) (fromSignal s)

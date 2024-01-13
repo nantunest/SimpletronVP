@@ -267,7 +267,7 @@ int sc_main(int argc, char* argv[]) {
 
     std::cout << "Starting simulation" << std::endl;
 
-    sc_core::sc_start(50000, sc_core::SC_US);
+    sc_core::sc_start(500000, sc_core::SC_US);
 
     std::cout << "End of Simulation." << std::endl;
     sc_close_vcd_trace_file(wf);

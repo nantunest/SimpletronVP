@@ -26,9 +26,10 @@ SC_MODULE(Simpletron)
                   JMP       = 0x09,
                   BGZ       = 0x0A,
                   BEZ       = 0x0B,
-                  HALT      = 0x0C,
+                  SNOT      = 0x0C,
                   SOR       = 0x0D,
                   SAND      = 0x0E,
+                  PDBG      = 0x0F
                  };
 
     unsigned short accumulator = 0;
@@ -66,12 +67,10 @@ SC_MODULE(Simpletron)
         i_we = true;
         i_address = operand_addr;
     }
-    void halt()
+    void snot()
     {
-        std::cout << "EXECUTING HALT" << std::endl;
-        unsigned short stop;
-        executing = false; 
-        std::cin >> stop;
+        std::cout << "EXECUTING SNOT: " << accumulator << " - " << operand_data << std::endl;
+        accumulator = ~accumulator;
     }
 
 
@@ -141,11 +140,14 @@ SC_MODULE(Simpletron)
 
     void sand()
     {
-        std::cout << "EXECUTING OR: " << accumulator << " - " << operand_data << std::endl;
+        std::cout << "EXECUTING AND: " << accumulator << " - " << operand_data << std::endl;
         accumulator &= static_cast<unsigned short>(data);
     }
 
-
+    void pdbg()
+    {
+        std::cout << "[PDBG]: " << std::dec << accumulator << std::endl;
+    }
 
     void execute_op()
     {
@@ -190,8 +192,11 @@ SC_MODULE(Simpletron)
             case SHR:
                 shr();
                 break;
-            case HALT:
-                halt();
+            case SNOT:
+                snot();
+                break;
+            case PDBG:
+                pdbg();
                 break;
         }
         
@@ -228,7 +233,6 @@ SC_MODULE(Simpletron)
         while(true){
            
             std::cout << "---------------------------------------------------------------------" << std::endl;
-            std::cout << "Iteration: " << cycle++ << std::endl;
 
         
             if (!initialized){
@@ -241,6 +245,9 @@ SC_MODULE(Simpletron)
                 switch(state)
                 {
                    case FETCH:
+                        std::cout << "Iteration: " << cycle++ << std::endl;
+                        std::cout << "==============================================================================" << std::endl;
+
                         /* State Enter */
                         std::cout << "[State FETCH <-]" << std::endl;
                         assign_internals();

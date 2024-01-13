@@ -20,18 +20,18 @@ SC_MODULE(Ram)
         if (ce) {
 
             const unsigned short memory_address = address - base_address;
-            std::cout << "[RAM]: read address = " << memory_address <<  std::endl;
+            // std::cout << "[RAM]: read address = " << memory_address <<  std::endl;
 
             if (memory_address - size)
             {
                 if (write_enable)
                 {
-                    std::cout << "[RAM]: writing " << data << " to " << memory_address << std::endl;
+                    // std::cout << "[RAM]: writing " << data << " to " << memory_address << std::endl;
                     memory[memory_address] = data;
                 }
                 else
                 {
-                    std::cout << "[RAM]: reading " << memory[memory_address] << " from " << memory_address << std::endl;
+                    // std::cout << "[RAM]: reading " << memory[memory_address] << " from " << memory_address << std::endl;
                     data = memory[memory_address];
                 }
             }

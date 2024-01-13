@@ -16,10 +16,10 @@ type AssebledArray = [Word16]
 type Register = (String, Address)
 type RegisterMap = [Register]
 
-data OpCode = SSHL | SSHR | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BGZ | BEZ | HALT | SOR | SAND
+data OpCode = SSHL | SSHR | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BGZ | BEZ | SNOT | SOR | SAND | PDBG
                   deriving (Enum, Show, Eq)
 
-data Instruction = Instruction String OpCode Address
+data Instruction =  Instruction String OpCode Address
             deriving (Show, Eq)
 
 data Var = Var VarName Address deriving (Show, Eq)
@@ -84,7 +84,10 @@ romStaticAddr :: Address
 romStaticAddr = 0x300
 
 ramStartAddr :: Address
-ramStartAddr = 0x400 
+ramStartAddr = 0x400
+
+regMapStartAddr :: Address
+regMapStartAddr = 0xF00
 
 registerMap :: VarMap 
 registerMap = [
