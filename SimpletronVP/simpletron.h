@@ -1,6 +1,8 @@
 #pragma once
 #include <systemc.h>
 
+#include <sstream>
+
 SC_MODULE(Simpletron)
 {
     sc_in<bool> clk;
@@ -144,9 +146,41 @@ SC_MODULE(Simpletron)
         accumulator &= static_cast<unsigned short>(data);
     }
 
+    
+
     void pdbg()
     {
-        std::cout << "[PDBG]: " << std::dec << accumulator << std::endl;
+        std::cout << "[PDBG]: " << "fip6: "<< std::dec << accumulator << std::endl;
+
+        std::ostringstream aux;
+        std::ostringstream signstr;
+        unsigned short fip = accumulator;
+
+
+        if (fip & 0x8000){
+            signstr << "-";
+            fip = ~(fip-1);
+        }
+        else
+        {
+            signstr << "+";
+        }
+
+        unsigned short ipart = fip >> 6;
+        unsigned short f = fip & 0x3F;
+
+        unsigned short fpm[3] = {10, 100, 1000};
+
+        std::cout << "conv: f: " << f << std::endl;
+
+        for (int i = 0; i < 3; i++){
+    		int n = f*fpm[i]/64;
+            if (n == 0)
+                aux << "0";
+        }
+        aux << static_cast<unsigned short>(f*1000/64);
+
+		std::cout << "[PDBG]: " << "conv: " << signstr.str() << std::dec << ipart << "." << aux.str() << std::endl;
     }
 
     void execute_op()

@@ -183,6 +183,7 @@ scaleToFiP6 fromMPU conv scale fip6 offset = [
         Instruction ""           LOAD     $ valFromAddressOf fromMPU          inRam,
         Instruction ""           SUB      $ valFromAddressOf "one"            inRom,
         Instruction ""           SNOT     0,
+        Instruction ""           STORE    $ valToAddressOf fromMPU            inRam,
 
         -- calc quotient of division
         -- q = fromMPU / conv
@@ -222,6 +223,7 @@ scaleToFiP6 fromMPU conv scale fip6 offset = [
         Instruction ""           LOAD     $ valFromAddressOf fip6             inRam,
         Instruction ""           SNOT     0,
         Instruction ""           ADD      $ valFromAddressOf "one"            inRom,
+        Instruction ""           STORE    $ valToAddressOf fip6               inRam,
         Instruction "scaleToFipEnd" LOAD     $ valFromAddressOf fip6          inRam
         ]
 
@@ -238,6 +240,39 @@ integrateValCalls = [
     -- integrateVal "accelXFiP6" "intAccelXFiP6"
     ]
 
+
+mulFip6 :: String -> String -> String -> Address -> [Instruction]
+mulFip6 a b c offset = [
+
+    Instruction ""      LOAD    $ valFromAddressOf a         inRam,
+    Instruction ""      SAND    $ valFromAddressOf "negMask" inRom,
+    Instruction ""      BEZ     $ fromIntegral offset +
+                                            toLabel
+                                            (mulFip6 a b c offset)
+                                            "mul",
+
+    Instruction ""      LOAD    $ valFromAddressOf a         inRam,
+    Instruction ""      SUB     $ valFromAddressOf "one"     inRom,
+    Instruction ""      SNOT    0,
+
+    Instruction "mul"   MUL     $ valFromAddressOf b         inRom,
+    Instruction ""      SSHR    $ valFromAddressOf "fpScale" inRom,
+    Instruction ""      STORE   $ valToAddressOf   c         inRam,
+
+    Instruction ""      LOAD    $ valFromAddressOf a         inRam,
+    Instruction ""      SAND    $ valFromAddressOf "negMask" inRom,
+    Instruction ""      BEZ     $ fromIntegral offset +
+                                            toLabel
+                                            (mulFip6 a b c offset)
+                                            "fin",
+
+    Instruction ""      LOAD    $ valFromAddressOf c         inRam,
+    Instruction ""      SNOT    0,
+    Instruction ""      ADD     $ valFromAddressOf "one"     inRom,
+    Instruction "fin"   LOAD    $ valFromAddressOf c         inRam
+
+    ]
+
 errorP :: Program
 errorP = [
     Instruction "errorP" LOAD     $ valFromAddressOf  "sRefStatic"    inRom,
@@ -248,32 +283,31 @@ errorP = [
 -- multFiP6 :: Program
 -- multFip6 = []
 
-controlP :: Program
-controlP = [
+controlP :: Address -> Program
+controlP offset = [
     -- (ctrlResul1 = (kp * e)) + (ctrlResult2 = (ki * integ (e)))
 
     -- integrate error
     Instruction "controlP" LOAD     $ valFromAddressOf  "sError"      inRam,
     Instruction "" ADD      $ valFromAddressOf  "integError"  inRam,
-    Instruction "" STORE    $ valToAddressOf    "integError"  inRam,
+    Instruction "" STORE    $ valToAddressOf    "integError"  inRam
+    ]
+    ++
 
-    -- ki * integError
-    Instruction "" MUL      $ valFromAddressOf  "ctrlKi"      inRom,
-    Instruction "" SSHR     $ valFromAddressOf  "fpScale"     inRom, -- fip6
-    Instruction "" STORE    $ valToAddressOf    "ctrlResult2" inRam,
+    mulFip6 "integError" "ctrlKi" "ctrlResult2" (fromIntegral offset + 3)
 
-    -- kp * integError
-    Instruction "" LOAD     $ valFromAddressOf  "sError"      inRam,
-    Instruction "" MUL      $ valFromAddressOf  "ctrlKp"      inRom,
-    Instruction "" SSHR     $ valFromAddressOf  "fpScale"     inRom, -- fip6
-    Instruction "" STORE    $ valToAddressOf    "ctrlResult1" inRam,
+    ++
+
+    mulFip6 "sError" "ctrlKp" "ctrlResult1" (fromIntegral offset + 3 + fromIntegral (length $ mulFip6 "integError" "ctrlKi" "ctrlResult2" 0))
+    ++
+    [
 
     -- add parts
     Instruction "" ADD      $ valFromAddressOf  "ctrlResult2" inRam,
     Instruction "" STORE    $ valToAddressOf    "sControl"    inRam,
 
 
-    Instruction "" LOAD     $ valFromAddressOf "sGyroVel" inRam,
+    Instruction "" LOAD     $ valFromAddressOf "sControl" inRam,
     Instruction "" PDBG 0
 
     ]
@@ -294,8 +328,11 @@ updateActuator = [
 
 testLoop :: Program
 testLoop = [
-    Instruction "testLoop"  LOAD $ valFromAddressOf "totalCycles" inRom,
-    Instruction ""          SUB $ valFromAddressOf "currentCycle" inRam,
+    Instruction "testLoop"  LOAD $ valFromAddressOf "currentCycle" inRam,
+    Instruction ""          ADD $ valFromAddressOf "one"           inRom,
+    Instruction ""          STORE $ valToAddressOf "currentCycle"  inRam,
+    Instruction ""          LOAD $ valFromAddressOf "totalCycles"  inRom,
+    Instruction ""          SUB $ valFromAddressOf "currentCycle"  inRam,
     Instruction ""          BGZ 4
     ]
 
@@ -303,11 +340,11 @@ gimbal :: [Instruction]
 gimbal =  setupMPU6000
        ++ setupPWM
        ++ readMPU6000Gyro (fromIntegral (length setupMPU6000 + length setupPWM))
-       ++ convertGyroToFiP6 (fromIntegral 
+       ++ convertGyroToFiP6 (fromIntegral
             (length setupMPU6000 + length setupPWM + length (readMPU6000Gyro (fromIntegral (length setupMPU6000 + length setupPWM))) ))
        ++ integrateGyro2
        ++ errorP
-       ++ controlP
+       ++ controlP 68
        ++ updateActuator
        ++ testLoop
        ++ [Instruction "end" JMP $ fromIntegral (length gimbal - 1)]
@@ -327,13 +364,14 @@ prepareProgStr (i:is) prog = (show label ++ addTabs label ++ show opCode ++ "\t"
                                         | a >= ramStartAddr && a < regMapStartAddr = findVarInRam a
                                         | a >= regMapStartAddr = findReg a
                                         | otherwise = show a
-                              findLabel a = labelName (prog!!fromIntegral addr)
+                              findLabel a = labelName (prog!!fromIntegral addr) addr
                               findVarInRom a = romVarName $ romVarDecl!!(fromIntegral a - fromIntegral romStaticAddr)
                               findVarInRam a = varName $ ramVarDecl!!(fromIntegral a - fromIntegral ramStartAddr)
                               findReg a = varName $ fromJust $ find (\(Var ni ai) -> a == ai) registerMap
                               romVarName (StaticVar n v a) = n
                               varName (Var n a) = n
-                              labelName (Instruction l i o) = l
+                              labelName (Instruction l i o) a | l == "" = show a
+                                                              | otherwise = l
                               addTabs l | length l >= 14 = "\t"
                                         | length l >= 6 = "\t\t"
                                         | otherwise = "\t\t\t"

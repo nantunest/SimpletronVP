@@ -13,7 +13,7 @@ SC_MODULE(Ram)
     sc_in<bool> clk;
     sc_in<bool> ce;
 
-    unsigned short memory[size];
+    unsigned short memory[size] = {0};
 
     void read_write()
     {
