@@ -1,3 +1,4 @@
+module Gimbal where
 import Sasm
 import Data.Binary ( Word16, encode )
 import Data.List (find)
