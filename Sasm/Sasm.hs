@@ -16,7 +16,7 @@ type AssebledArray = [Word16]
 type Register = (String, Address)
 type RegisterMap = [Register]
 
-data OpCode = SSHL | SSHR | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BGZ | BEZ | SNOT | SOR | SAND | PDBG
+data OpCode = SNOP | SSHL | SSHR | LOAD | STORE | ADD | SUB | DIV | MUL | JMP | BGZ | BEZ | SNOT | SOR | SAND | PDBG
                   deriving (Enum, Show, Eq)
 
 data Instruction =  Instruction String OpCode Address
@@ -29,7 +29,7 @@ data StaticVar = StaticVar VarName VarValue Address deriving (Show, Eq)
 assembleProgram ::  Program -> AssebledArray
 assembleProgram = map assembleInstruction
     where assembleInstruction (Instruction l i o) =  shiftL (instToOpCode i) 12 .|. o
-          instToOpCode i = fromIntegral (fromEnum i + 1) :: Word16
+          instToOpCode i = fromIntegral (fromEnum i) :: Word16
 
 assembleRomStatic :: StaticVarMap -> AssebledArray
 assembleRomStatic = map assembleStaticVar
