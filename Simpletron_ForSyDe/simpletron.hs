@@ -13,11 +13,11 @@ type SimpInstruction    = Integer
 type SimpOpcode         = OpCode
 type SimpOperand        = Integer
 type SimpDecoded        = (SimpOpcode, SimpOperand)
-type SimpState          = (SimpFSM, SimpPC, SimpAccumulator, SimpOpcode, SimpOperand, SimpDataAccess)
+type SimpState          = (SimpFSM, SimpPC, SimpAccumulator, SimpOpcode, SimpOperand)
 type SimpAddress        = Integer
 type SimpData           = Integer
 
-type SimpDataInput       = AbstExt SimpData
+type SimpDataInput      = AbstExt SimpData
 type SimpDataAccess     = Access SimpData
 
 -- ### Simpletron Core ###
@@ -36,12 +36,16 @@ execute SSHR    acc op din = (acc `shiftR` fromInteger op,  Read 0)
 execute SNOP    acc op din = (acc,                          Read 0)
 execute PDBG    acc op din = (acc,                          Read 0)
 
-simp :: SimpState  -> Integer -> SimpDataInput -> SimpState
-simp  (EXEC, pc, acc, opcode, operand, dout) _ d = (FETCH, pc, execAcc, opcode, operand, execDout)
+simp :: (SimpState, SimpDataAccess) -> Integer -> SimpDataInput -> (SimpState, SimpDataAccess)
+simp  ((EXEC, pc, acc, opcode, operand), _) _ d = ((FETCH, pc, execAcc, opcode, operand), execDout)
                                                    where
                                                        (execAcc, execDout) = execute opcode acc operand d
-simp  (DECODE, pc, acc, opcode, operand, dout) _ d = (EXEC, pc, acc, fst $ decode (fromAbstExt 0 d), snd $ decode (fromAbstExt 0 d), Read $ fromIntegral $ snd $ decode (fromAbstExt 0 d))
-simp  (FETCH, pc, acc, opcode, operand, dout) _ d = (DECODE, pc + 1, acc, opcode, operand, Read $ fromIntegral pc)
+simp  ((DECODE, pc, acc, opcode, operand), _) _ d = ((EXEC, pc, acc, nextOpcode, nextOperand), nextDataAccess)
+                                                    where
+                                                        nextOpcode = fst $ decode (fromAbstExt 0 d)
+                                                        nextOperand = snd $ decode (fromAbstExt 0 d)
+                                                        nextDataAccess =  Read $ fromIntegral $ snd $ decode (fromAbstExt 0 d)
+simp  ((FETCH, pc, acc, opcode, operand), _) _ d = ((DECODE, pc + 1, acc, opcode, operand), Read $ fromIntegral pc)
 
 --simpP :: Signal SimpState -> Signal SimpDataRead -> Signal SimpState
 --simpP = zipWithSY simp
@@ -50,13 +54,10 @@ simp  (FETCH, pc, acc, opcode, operand, dout) _ d = (DECODE, pc + 1, acc, opcode
 -- timerP = mooreSY timer outf (INIT,1,0,0,False,False)
 
 simpMP :: Signal Integer -> Signal SimpDataInput -> Signal (SimpState, SimpDataAccess)
-simpMP = moore2SY simp outf s0
-    where outf s@(_,_,_,_,_,da) = (s,da)
+simpMP = moore2SY simp outf (s0, Read 0)
+    where outf s = s
 
-memOp :: SimpState -> SimpDataAccess
-memOp (_,_,_,_,_,op) = op
-
-s0 = (FETCH, 0, 0, SNOP, 0, Read 0)
+s0 = (FETCH, 0, 0, SNOP, 0)
 
 simpWithMemoryP :: Signal Integer -> Signal (SimpState, SimpDataAccess)
 simpWithMemoryP clk = stateOut
