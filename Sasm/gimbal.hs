@@ -308,7 +308,7 @@ controlP offset = [
     Instruction "" STORE    $ valToAddressOf    "sControl"    inRam,
 
 
-    Instruction "" LOAD     $ valFromAddressOf "sControl" inRam,
+    Instruction "" LOAD     $ valFromAddressOf "gyroFromMPU" inRam,
     Instruction "" PDBG 0
 
     ]

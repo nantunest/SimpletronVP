@@ -11,5 +11,5 @@ clean_%: $(OBJS)
 
 %: $(OBJS)
 	@echo $@
-	ghc -o $@ $@.hs 
+	ghc -main-is $@ -o $@ $@.hs 
 	./$@
