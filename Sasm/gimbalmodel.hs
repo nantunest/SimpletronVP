@@ -5,31 +5,36 @@ type MotorAngle = Float
 type GyroAngle = Float
 type GyroAngle' = Float
 type GyroAngle'' = Float
-type PwmSignal = Float
+type PwmDutyCycle = Float
+type ControlAngle = Float
 type GimbalAngle = Float
 type DisturbAngle = Float
 type ErrorAngle = Float
 type LinearMovement = Float
 
-servoMotor :: PwmSignal -> MotorAngle
-servoMotor spwm = spwm * 1.8
+servoMotorF :: PwmDutyCycle -> MotorAngle
+servoMotorF spwm = spwm * 1.8
 
-gimbal :: DisturbAngle -> MotorAngle -> GimbalAngle
-gimbal ga ma = ga + ma
+gimbalF :: DisturbAngle -> MotorAngle -> GimbalAngle
+gimbalF d m = d + m
 
 gyro :: GimbalAngle -> GyroAngle
 gyro a = a
 
-gimbalDisturb :: LinearMovement -> DisturbAngle
-gimbalDisturb lm = asin (lm/gimbalArmLength) * (360/(2*pi))
+gimbalDisturbF :: LinearMovement -> DisturbAngle
+gimbalDisturbF lm = asin (lm/gimbalArmLength) * (360/(2*pi))
     where gimbalArmLength = 0.2 -- 20cm
 
 -- pCtrl :: ErrorAngle-> PwmSignal
 -- pCtrl e = kp*(e/1.8)
 --     where kp = 0.25
 
-gimbalS :: [LinearMovement]
-gimbalS = take 20 [0,0..] ++ take 30 [0,0.001..] ++ take 50 [0.03, 0.03..] ++ take 30 [0.03, 0.031..] ++ take 50 [0.06, 0.06..]
+disturbS :: [LinearMovement]
+disturbS =  take 20 [0,0..]
+        ++ take 30 [0,0.001..]
+        ++ take 50 [0.03, 0.03..]
+        ++ take 30 [0.03, 0.031..]
+        ++ take 50 [0.06, 0.06..]
 
 -- system :: Int -> PwmSignal
 -- system 0 = pCtrl $ gimbal (gimbalDisturb 0) (servoMotor 0)
@@ -41,19 +46,19 @@ derivP a = zipWithSY (-) a (delaySY 0 a)
 integP :: Num c => Signal c -> Signal c
 integP = mooreSY (+) (+0) 0
 
-gimbalDisturbP :: Signal LinearMovement -> Signal GimbalAngle
-gimbalDisturbP = mapSY gimbalDisturb -- combSY
+gimbalDisturb :: Signal LinearMovement -> Signal GimbalAngle
+gimbalDisturb = mapSY gimbalDisturbF -- combSY
 
-gimbalP :: Signal GimbalAngle -> Signal MotorAngle -> Signal GimbalAngle
-gimbalP = zipWithSY gimbal
+gimbal :: Signal GimbalAngle -> Signal MotorAngle -> Signal GimbalAngle
+gimbal = zipWithSY gimbalF
 
 gyroP :: Signal GimbalAngle -> Signal GyroAngle''
 gyroP = derivP . derivP
 
-servoMotorP :: Signal PwmSignal -> Signal MotorAngle
-servoMotorP = mapSY servoMotor
+servoMotor :: Signal PwmDutyCycle -> Signal MotorAngle
+servoMotor = mapSY servoMotorF
 
-controlP :: Signal ErrorAngle -> Signal PwmSignal
+controlP :: Signal ErrorAngle -> Signal ControlAngle
 -- controlP e = zipWithSY (+) (zipWithSY (/) e $ signal $ [1.8..]) (ki * integP e)
 --     where kp = 0.2
 --           ki = 1
@@ -64,8 +69,8 @@ controlP e = zipWithSY (+) (propCtrl e) (integCtrl e)
           ki = signal [0.2,0.2..]
 
 -- o = sig/180*100
-servoDriveP :: Signal Float -> Signal Float
-servoDriveP c = zipWithSY (/) c $ signal [1.8,1.8..]
+servoDrive :: Signal ControlAngle -> Signal PwmDutyCycle
+servoDrive c = zipWithSY (/) c $ signal [1.8,1.8..]
 
 delayP :: Signal Float -> Signal Float
 delayP = delaySY 0
@@ -84,13 +89,13 @@ sistemP sInput = sOutput
           sPos = integP sVel
           sVel = integP sGyro
           sGyro = gyroP sGimbal
-          sGimbal = gimbalP sGimbalDist sServo
-          sGimbalDist = gimbalDisturbP sInput
-          sServo = servoMotorP sServoDrive
-          sServoDrive = servoDriveP sControl
+          sGimbal = gimbal sGimbalDist sServo
+          sGimbalDist = gimbalDisturb sInput
+          sServo = servoMotor sServoDrive
+          sServoDrive = servoDrive sControl
 
 
-ga = signal gimbalS
+ga = signal disturbS
 (sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sPos, sVel, sGyro, sServoDrive)=sistemP ga
 pServo = d2aConverter DAlinear 1.0 sServo
 pGimbal= d2aConverter DAlinear 1.0 sGimbal
@@ -111,7 +116,7 @@ plotAll = plotCT' 100 [(pError, "error"),
                        (pServoDrive, "pwmDC")]
 
 gs :: Signal (SubsigCT LinearMovement)
-gs = d2aConverter DAlinear 1.0 $ signal gimbalS
+gs = d2aConverter DAlinear 1.0 $ signal disturbS
 
 plotSingle :: IO String
 plotSingle = plotCT' 200 [(pVel, "vel")]
