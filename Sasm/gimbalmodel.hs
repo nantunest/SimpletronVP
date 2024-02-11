@@ -40,20 +40,20 @@ disturbS =  take 20 [0,0..]
 -- system 0 = pCtrl $ gimbal (gimbalDisturb 0) (servoMotor 0)
 -- system n = pCtrl (gimbal (gimbalDisturb $ gimbalS!!n) (servoMotor $ system (n-1))) + system (n-1)
 
-derivP :: Num c => Signal c -> Signal c
-derivP a = zipWithSY (-) a (delaySY 0 a)
+diffSY :: Num c => Signal c -> Signal c
+diffSY a = zipWithSY (-) a (delaySY 0 a)
 
-integP :: Num c => Signal c -> Signal c
-integP = mooreSY (+) (+0) 0
+sumSY :: Num c => Signal c -> Signal c
+sumSY = mooreSY (+) (+0) 0
 
 gimbalDisturb :: Signal LinearMovement -> Signal GimbalAngle
 gimbalDisturb = mapSY gimbalDisturbF -- combSY
 
 gimbal :: Signal GimbalAngle -> Signal MotorAngle -> Signal GimbalAngle
-gimbal = zipWithSY gimbalF
+gimbal = zipWithSY (+)
 
 gyroP :: Signal GimbalAngle -> Signal GyroAngle''
-gyroP = derivP . derivP
+gyroP = diffSY . diffSY
 
 servoMotor :: Signal PwmDutyCycle -> Signal MotorAngle
 servoMotor = mapSY servoMotorF
@@ -64,7 +64,7 @@ controlP :: Signal ErrorAngle -> Signal ControlAngle
 --           ki = 1
 controlP e = zipWithSY (+) (propCtrl e) (integCtrl e)
     where propCtrl = zipWithSY (*) kp
-          integCtrl = zipWithSY (*) ki . integP
+          integCtrl = zipWithSY (*) ki . sumSY
           kp = signal [0.25, 0.25..]
           ki = signal [0.2,0.2..]
 
@@ -81,13 +81,23 @@ errorInteg = mooreSY (+) (+0) 0
 errorP :: Signal RefAngle -> Signal GyroAngle -> Signal ErrorAngle
 errorP = zipWithSY (-)
 
+sistemP :: Signal LinearMovement -> (Signal ControlAngle,
+                                     Signal ErrorAngle,
+                                     Signal RefAngle,
+                                     Signal GimbalAngle,
+                                     Signal MotorAngle,
+                                     Signal GimbalAngle,
+                                     Signal GyroAngle,
+                                     Signal GyroAngle',
+                                     Signal GyroAngle'',
+                                     Signal PwmDutyCycle)
 sistemP sInput = sOutput
     where sOutput = (sControl, sError, sRef, sGimbalDist, sServo, sGimbal, sPos, sVel, sGyro, sServoDrive)
           sControl = controlP sError
           sError = errorP sRef sPos
           sRef = signal $ take (lengthS sInput) [0,0..]
-          sPos = integP sVel
-          sVel = integP sGyro
+          sPos = sumSY sVel
+          sVel = sumSY sGyro
           sGyro = gyroP sGimbal
           sGimbal = gimbal sGimbalDist sServo
           sGimbalDist = gimbalDisturb sInput
