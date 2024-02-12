@@ -122,7 +122,7 @@ SC_MODULE(Spi)
     SpiPrescalar prescalar;
     sc_signal<unsigned short> prescalar_val;
     sc_signal<bool> prescalar_ce;
- 
+    
     SpiShifter shifter;
     sc_signal<bool> shifter_ce;
     sc_signal<unsigned short> shifter_wshift;

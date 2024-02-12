@@ -75,14 +75,12 @@ SC_MODULE(Simpletron)
         accumulator = ~accumulator;
     }
 
-
     void add()
     {
         std::cout << "EXECUTING ADD" << std::endl;
         accumulator += operand_data; 
     }
-
-
+    
     void sub()
     {
         std::cout << "EXECUTING SUB: " << accumulator << " - " << operand_data << std::endl;

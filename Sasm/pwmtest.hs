@@ -1,7 +1,9 @@
 import Sasm
 
+inRam = ramVarDecl
+
 romValMap:: StaticVarMap
-romValMap= [
+romValMap = resolveRomAddr [
         StaticVar (Var "t_modulus" $ romStaticAddr + 0) 10,
         StaticVar (Var "t_mode"    $ romStaticAddr + 1) 2,
         StaticVar (Var "pwm_width" $ romStaticAddr + 2) 7,
@@ -18,18 +20,14 @@ varMap = [
 
 pwmSetProg :: Program
 pwmSetProg = [
-    Instruction "pwmSet"       LOAD $ varAddress (fromRom romValMap) "t_modulus",
+    Instruction "pwmSet"       LOAD $ valFromAddressOf "t_modulus" inRom,
     Instruction ""             STORE $ varAddress registerMap "timerModulus",
-
     Instruction ""             LOAD $ varAddress (fromRom romValMap) "pwm_width",
     Instruction ""             STORE $ varAddress registerMap "pwmWidth",
-
     Instruction ""             LOAD $ varAddress (fromRom romValMap) "pwm_mode",
     Instruction ""             STORE $ varAddress registerMap "pwmState",
-
     Instruction ""             LOAD $ varAddress (fromRom romValMap) "t_mode",
     Instruction ""             STORE $ varAddress registerMap "timerState",
-
     Instruction ""             JMP $ fromIntegral (length pwmSetProg - 1)
     ]
 

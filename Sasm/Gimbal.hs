@@ -308,7 +308,7 @@ controlP offset = [
     Instruction "" STORE    $ valToAddressOf    "sControl"    inRam,
 
 
-    Instruction "" LOAD     $ valFromAddressOf "gyroFromMPU" inRam,
+    Instruction "" LOAD     $ valFromAddressOf "sControl" inRam,
     Instruction "" PDBG 0
 
     ]
@@ -352,3 +352,34 @@ gimbal =  setupMPU6000
 
 main :: IO ()
 main = writeAssembledToFile (assembleRom gimbal romVarDecl) "gimbal.hex"
+
+prepareProgStr :: Program -> Program -> [String]
+-- prettyPrint = map ((show) . (\(Instruction l i o) -> (i, o)))
+
+prepareProgStr (i:is) prog = (show label ++ addTabs label ++ show opCode ++ "\t" ++ show (findVar addr) ++ "\n") : prepareProgStr is prog
+                        where label = (\(Instruction l i o) -> l) i
+                              opCode = (\(Instruction l i o) -> i) i
+                              addr = (\(Instruction l i o) -> o) i
+                              findVar a | a < romStaticAddr = findLabel a
+                                        | a >= romStaticAddr && a < ramStartAddr = findVarInRom a
+                                        | a >= ramStartAddr && a < regMapStartAddr = findVarInRam a
+                                        | a >= regMapStartAddr = findReg a
+                                        | otherwise = show a
+                              findLabel a = labelName (prog!!fromIntegral addr) addr
+                              findVarInRom a = romVarName $ romVarDecl!!(fromIntegral a - fromIntegral romStaticAddr)
+                              findVarInRam a = varName $ ramVarDecl!!(fromIntegral a - fromIntegral ramStartAddr)
+                              findReg a = varName $ fromJust $ find (\(Var ni ai) -> a == ai) registerMap
+                              romVarName (StaticVar n v a) = n
+                              varName (Var n a) = n
+                              labelName (Instruction l i o) a | l == "" = show a
+                                                              | otherwise = l
+                              addTabs l | length l >= 14 = "\t"
+                                        | length l >= 6 = "\t\t"
+                                        | otherwise = "\t\t\t"
+prepareProgStr [] _ = []
+
+prettyPrint :: [Instruction] -> String
+prettyPrint prog = concat $ addLine $ addTab $ prepareProgStr prog prog
+                    where addLine = zipWith (++) (map show [0..])
+                          addTab = zipWith (++) (replicate progLen "\t")
+                          progLen = length $ prepareProgStr prog prog
