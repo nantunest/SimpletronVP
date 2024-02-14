@@ -101,7 +101,6 @@ SC_MODULE(SpiShifter)
     }
 };
 
-
 SC_MODULE(Spi)
 {
     // External signals
@@ -234,8 +233,7 @@ SC_MODULE(Spi)
                 {
                     data = register_bank[reg_addr];
                 }
-                
-                
+
                 ss = false;
             break;
         }
