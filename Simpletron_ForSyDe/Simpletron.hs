@@ -23,6 +23,7 @@ placedMemorySY place size = mealySY ns o (newMem size)
     ns mem (Write x v) = memState mem (Write (x-place) v)
     o  mem (Read x)    = memOutput mem (Read (x-place))
     o  mem (Write x v) = memOutput mem (Write (x-place) v)
+
 data SimpFSM            = FETCH | DECODE | EXEC | WRITEBACK
                   deriving (Enum, Show, Eq)
 
@@ -196,17 +197,17 @@ type SpiState = (SpiStatus, SpiSclk, SpiMosi, SpiSS, SpiPrescalar, SpiShift, Spi
 
 spi :: SpiState -> SimpDataAccess -> SpiMiso -> SpiState
 spi s@(S_SHIF, sclk, mo, ss, p, spiShift, c) _ mi
-    | c == 17 = (S_DONE, False, False, False, p, nextShift, 0)
+    | c == 16 = (S_DONE, False, False, False, p, nextShift, 0)
     | otherwise = (S_SHIF, False, nextMo, True, p, nextShift, c+1)
         where
             nextShift = (etoi mi `shiftL` 15) .|. (spiShift `shiftR` 1)
             nextMo = itoe (spiShift .&. 0x0001)
 
 spi s@(S_READY, sclk, mo, ss, p, spiShift,c) _ _ = (S_SHIF, True, mo, False, p, spiShift, 0)
-spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF30 d) _ = (itoe d, sclk, mo, False, p, spiShift,c)
-spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF31 d) _ = (S_INIT, sclk, mo, False, d, spiShift, c)
-spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF32 d) _ = (S_READY, sclk, mo, False, p, spiShift,c)
-spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF33 d) _ = (S_INIT, sclk, mo, False, p, d, c)
+spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF30 d) _ = (itoe d, sclk, mo, False, p, spiShift,c)    -- status
+spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF31 d) _ = (S_INIT, sclk, mo, False, d, spiShift, c)   -- prescalar
+spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF32 1) _ = (S_READY, sclk, mo, False, p, spiShift,c)   -- command
+spi s@(S_INIT, sclk, mo, ss, p, spiShift,c) (Write 0xF33 d) _ = (S_INIT, sclk, mo, False, p, d, c)          -- shift
 spi s _ _ = s
 
 spiP :: Signal SimpDataAccess -> Signal SpiMiso -> Signal (SpiState, SimpDataInput)
@@ -224,7 +225,7 @@ type SpiDevState2 = (SpiDevStatus, SpiSclk, SpiMiso, SpiShift, SpiShiftCounter, 
 spiDev :: SpiDevState -> SpiSS -> SpiMosi -> SpiDevState
 spiDev (IDLE, sclk, mi, devShift, c) True mo = (SHIF, sclk, mi, devShift, 0)
 spiDev (SHIF, sclk, mi, devShift, c) True mo
-    | c == 16 = (IDLE, sclk, mi, devShift, 0)
+    | c == 17 = (IDLE, sclk, mi, devShift, 0)
     | otherwise = (SHIF, sclk, nextMi, nextShift, c+1)
         where
             nextShift = (etoi mo `shiftL` 15) .|. (devShift `shiftR` 1)
@@ -237,7 +238,7 @@ spiDevP = moore2SY spiDev outf (IDLE, False, False, 0x00, 0)
     where outf ps = ps
 
 gyroXoutS :: [Integer]
-gyroXoutS = [10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,38,0,-9,-8,-5,-4,-3,-2,-2,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-38,0,9,8,5,4,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,38,0,-9,-8,-5,-4,-3,-2,-2,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-39,0,10,8,5,4,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+gyroXoutS = [1,1,2,3,5,8,13,21,0,0,0,0,0,0,0,0,0,0,0,0,0,38,0,-9,-8,-5,-4,-3,-2,-2,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-38,0,9,8,5,4,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,38,0,-9,-8,-5,-4,-3,-2,-2,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-39,0,10,8,5,4,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 baseAddr :: Integer
 baseAddr = 0x3B
 
@@ -270,6 +271,9 @@ getSpiSS (_,_,_,ss,_,_,_) = ss
 
 getSpiMosi:: SpiState -> SpiSS
 getSpiMosi (_,_,mo,_,_,_,_) = mo
+
+getSimpDataInput :: ((SpiState, SimpDataInput), SpiDevState2) -> SimpDataInput
+getSimpDataInput ( (_,sin),_) = sin
 
 spiWithMpu6000 :: Signal SimpDataAccess -> Signal ((SpiState, SimpDataInput),SpiDevState2)
 spiWithMpu6000 dacc = zipWithSY (,) sOut sMPU6000
@@ -352,9 +356,13 @@ spiDevPrettyPrint s = header ++ concatMap unpackSpiS (fromSignal s)
 simpExecute :: Integer -> Signal ((SimpState, SimpDataAccess), SimpDataInput)
 simpExecute a = simpProcNetP $ signal [0..a]
 
-filterPDBG :: ((SimpState, SimpDataAccess), SimpDataInput) -> AbstExt (SimpOpcode, SimpDataAccess,SimpDataInput)
-filterPDBG (((EXEC,_,a,op,_),dacc),inp) = Prst (op, dacc,inp)
+filterPDBG :: ((SimpState, SimpDataAccess), SimpDataInput) -> AbstExt (SimpOpcode, SimpAccumulator)
+filterPDBG (((EXEC,_,a,PDBG,_),dacc),inp) = Prst (PDBG, a)
 filterPDBG _ = Abst
 
 main :: IO ()
 main = putStr $ show $ simpExecute 10000
+
+addrh =0x3B+8
+addrl =0x3B+9
+--mapSY getSimpDataInput $ spiWithMpu6000 $ signal $ [Write 0xF33 addrh, Write 0xF33 1] ++ replicate 30 (Read 0xF30)

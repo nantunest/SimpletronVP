@@ -102,9 +102,7 @@ registerMap = [
     Var "spiCommand"     0xF32,
     Var "spiShift"       0xF33
     ]
-
-
-    
+   
 prepareProgStr :: [StaticVar] -> VarMap -> Program -> Program -> [String]
 -- prettyPrint = map ((show) . (\(Instruction l i o) -> (i, o)))
 

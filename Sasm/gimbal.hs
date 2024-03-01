@@ -163,11 +163,6 @@ highLowToValue h l v = [
     Instruction ""  SSHL  $ valFromAddressOf    "eight" inRom,
     Instruction ""  SOR   $ valFromAddressOf    l       inRam,
     Instruction ""  STORE $ valToAddressOf      v       inRam
-    -- Instruction ""  SAND  $ valFromAddressOf "negMask" inRom,
-    -- Instruction ""  BEZ 0, --branch to end of procedure
-    -- Instruction ""  LOAD $ valFromAddressOf v inRam,
-    -- Instruction ""  SNOT 0,
-    -- Instruction ""  SUB $ valFromAddressOf "one" inRom
     ]
 
 -- Alternative to scaleToFiP6
