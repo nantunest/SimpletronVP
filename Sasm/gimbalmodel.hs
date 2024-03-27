@@ -129,7 +129,9 @@ gs :: Signal (SubsigCT LinearMovement)
 gs = d2aConverter DAlinear 1.0 $ signal disturbS
 
 plotSingle :: IO String
-plotSingle = plotCT' 200 [(pVel, "vel")]
+plotSingle = plotCT' 200 [(pGyro, "pGyro"),
+                           (pVel, "pVel"),
+                           (pPos, "pPos")]
 
 writeSigToFile :: FilePath -> Signal Float -> IO ()
 writeSigToFile f s = writeFile f $ concatMap ((show . (++ ",")) . show) (fromSignal s)

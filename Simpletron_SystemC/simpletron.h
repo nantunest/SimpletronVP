@@ -148,7 +148,6 @@ SC_MODULE(Simpletron)
 
     void pdbg()
     {
-        std::cout << "[PDBG]: " << "fip6: "<< std::dec << accumulator << std::endl;
 
         std::ostringstream aux;
         std::ostringstream signstr;
@@ -164,21 +163,22 @@ SC_MODULE(Simpletron)
             signstr << "+";
         }
 
-        unsigned short ipart = fip >> 6;
-        unsigned short f = fip & 0x3F;
+        unsigned short ipart = fip >> 8;
+        unsigned short f = fip & 0xFF;
 
         unsigned short fpm[3] = {10, 100, 1000};
 
         std::cout << "conv: f: " << f << std::endl;
 
         for (int i = 0; i < 3; i++){
-    		int n = f*fpm[i]/64;
+    		int n = f*fpm[i]/256;
             if (n == 0)
                 aux << "0";
         }
-        aux << static_cast<unsigned short>(f*1000/64);
+        aux << static_cast<unsigned short>(f*1000/256);
 
 		std::cout << "[PDBG]: " << "conv: " << signstr.str() << std::dec << ipart << "." << aux.str() << std::endl;
+        std::cout << "[PDBG]: " << "fip6: "<< std::dec << accumulator << std::endl;
     }
 
     void execute_op()

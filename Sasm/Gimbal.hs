@@ -16,13 +16,13 @@ romVarDecl = resolveRomAddr [
         StaticVar "three"          3,
         StaticVar "mpuReadSize"    12,
         StaticVar "eight"          8,
-        StaticVar "six"            6,
         StaticVar "accelXHaddr"    0x3B,
         StaticVar "accelXLaddr"    0x3C,
         StaticVar "gyroHaddr"      0x43,
         StaticVar "gyroLaddr"      0x44,
         StaticVar "MPUdiv"         131,
-        StaticVar "fpScale"        6,
+        StaticVar "MPUscale"       100,
+        StaticVar "fpScale"        8,
         StaticVar "gyroFiltFiP6"   57, -- 0.9 in fixed point 6
         StaticVar "accelFiltFiP6"  7,  -- 0.1 in fixed point 6
         StaticVar "sRefStatic"     0,
@@ -146,17 +146,6 @@ readMPU6000Gyro offset =  readGyroHigh ++ readGyroLow ++ joinHighLow
                                   readGyroLow = readMPU6000 "gyroLaddr"  "gyroL" $ fromIntegral (length readGyroHigh) + offset
                                   joinHighLow = highLowToValue "gyroH" "gyroL" "gyroFromMPU"
 
-readMPU6000calls :: [FunctionCall]
-readMPU6000calls = [
---    readMPU6000 "accelXHaddr" "accelXH",
---    readMPU6000 "accelXLaddr" "accelXL",
-    readMPU6000 "gyroHaddr"  "gyroH",
-    readMPU6000 "gyroLaddr"  "gyroL"
-    ]
-
-readMPU6000registers :: Program
-readMPU6000registers = joinFunctionCalls readMPU6000calls (length setupMPU6000 + length setupPWM)
-
 highLowToValue :: String -> String -> String -> Program
 highLowToValue h l v = [
     Instruction "h2l"  LOAD  $ valFromAddressOf    h       inRam,
@@ -225,6 +214,11 @@ scaleToFiP6 fromMPU conv scale fip6 offset = [
         Instruction ""           SNOT     0,
         Instruction ""           ADD      $ valFromAddressOf "one"            inRom,
         Instruction ""           STORE    $ valToAddressOf fip6               inRam,
+        Instruction ""           LOAD     $ valFromAddressOf fromMPU             inRam,
+        Instruction ""           SNOT     0,
+        Instruction ""           ADD      $ valFromAddressOf "one"            inRom,
+        Instruction ""           STORE    $ valToAddressOf fromMPU               inRam,
+ 
         Instruction "scaleToFipEnd" LOAD     $ valFromAddressOf fip6          inRam
         ]
 
@@ -233,12 +227,6 @@ integrateVal var ivar = [
     Instruction "integ"  LOAD    $ varAddress ramVarDecl    ivar,
     Instruction ""  ADD     $ varAddress ramVarDecl    var,
     Instruction ""  STORE   $ varAddress ramVarDecl    ivar
-    ]
-
-integrateValCalls :: [Program]
-integrateValCalls = [
-    integrateVal "gyroXFiP6" "intGyroXFiP6"
-    -- integrateVal "accelXFiP6" "intAccelXFiP6"
     ]
 
 
@@ -305,19 +293,24 @@ controlP offset = [
 
     -- add parts
     Instruction "" ADD      $ valFromAddressOf  "ctrlResult2" inRam,
-    Instruction "" STORE    $ valToAddressOf    "sControl"    inRam,
+    Instruction "" STORE    $ valToAddressOf    "sControl"    inRam
 
+    -- Instruction "" LOAD     $ valFromAddressOf "gyroFromMPU" inRam,
+    -- Instruction "" LOAD     $ valFromAddressOf "sGyroAcc" inRam,
 
-    Instruction "" LOAD     $ valFromAddressOf "sControl" inRam,
+    ]
+
+traceSignal :: String -> Program
+traceSignal sig = [
+    Instruction "" LOAD     $ valFromAddressOf sig inRam,
     Instruction "" PDBG 0
-
     ]
 
 convertGyroToFiP6 :: Address -> Program
 convertGyroToFiP6 = scaleToFiP6 "gyroFromMPU" "MPUdiv" "fpScale" "sGyroAcc"
 
 integrateGyro2 :: Program
-integrateGyro2 = integrateVal "sGyroAcc" "sGyroVel" ++ integrateVal "sGyroVel" "sGyroPos"
+integrateGyro2 = integrateVal "sGyroAcc" "sGyroVel" ++ integrateVal "sGyroVel" "sGyroPos" ++ traceSignal "sGyroPos"
 
 updateActuator :: Program
 updateActuator = [
@@ -341,22 +334,21 @@ gimbal :: [Instruction]
 gimbal =  setupMPU6000
        ++ setupPWM
        ++ readMPU6000Gyro (fromIntegral (length setupMPU6000 + length setupPWM))
-       ++ convertGyroToFiP6 (fromIntegral
-            (length setupMPU6000 + length setupPWM + length (readMPU6000Gyro (fromIntegral (length setupMPU6000 + length setupPWM))) ))
+       ++ convertGyroToFiP6 (fromIntegral (length setupMPU6000 + length setupPWM + length (readMPU6000Gyro (fromIntegral (length setupMPU6000 + length setupPWM))) ))
        ++ integrateGyro2
        ++ errorP
-       ++ controlP 68
+       ++ controlP (fromIntegral (length setupMPU6000 + length setupPWM + length integrateGyro2 + length errorP + length ( convertGyroToFiP6 (fromIntegral (length setupMPU6000 + length setupPWM + length (readMPU6000Gyro (fromIntegral (length setupMPU6000 + length setupPWM))) )))  ))
        ++ updateActuator
        ++ testLoop
        ++ [Instruction "end" JMP $ fromIntegral (length gimbal - 1)]
 
 main :: IO ()
-main = writeAssembledToFile (assembleRom gimbal romVarDecl) "gimbal.hex"
+main = writeAssembledToFile (assembleRom gimbal romVarDecl) "Gimbal.hex"
 
 prepareProgStr :: Program -> Program -> [String]
 -- prettyPrint = map ((show) . (\(Instruction l i o) -> (i, o)))
 
-prepareProgStr (i:is) prog = (show label ++ addTabs label ++ show opCode ++ "\t" ++ show (findVar addr) ++ "\n") : prepareProgStr is prog
+prepareProgStr' (i:is) prog = (show label ++ addTabs label ++ show opCode ++ "\t" ++ show (findVar addr) ++ "\n") : prepareProgStr' is prog
                         where label = (\(Instruction l i o) -> l) i
                               opCode = (\(Instruction l i o) -> i) i
                               addr = (\(Instruction l i o) -> o) i
@@ -379,7 +371,7 @@ prepareProgStr (i:is) prog = (show label ++ addTabs label ++ show opCode ++ "\t"
 prepareProgStr [] _ = []
 
 prettyPrint :: [Instruction] -> String
-prettyPrint prog = concat $ addLine $ addTab $ prepareProgStr prog prog
+prettyPrint prog = concat $ addLine $ addTab $ prepareProgStr' prog prog
                     where addLine = zipWith (++) (map show [0..])
                           addTab = zipWith (++) (replicate progLen "\t")
-                          progLen = length $ prepareProgStr prog prog
+                          progLen = length $ prepareProgStr' prog prog
