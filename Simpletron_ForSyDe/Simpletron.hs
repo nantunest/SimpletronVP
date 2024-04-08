@@ -27,7 +27,7 @@ placedMemorySY place size = mealySY ns o (newMem size)
 data SimpFSM            = FETCH | DECODE | EXEC | WRITEBACK
                   deriving (Enum, Show, Eq)
 
--- ### Simpletron Core ###
+-- ### -------------------- Simpletron Core -------------------------- ###
 
 type SimpPC             = Integer
 type SimpAccumulator    = Integer
@@ -94,7 +94,8 @@ simpWithMemoryP clk = stateOut
         stateOut = simpMP clk (dropS (length progCompiled) sFromMemory)
         sFromMemory = memorySY (length progCompiled) (signal romWriteSig +-+ sndSY stateOut)
 
--- ### Timer ###
+
+-- ### ------------------------------------ Timer ----------------------------------------------- ###
 
 data TimerStatus        = T_INIT | T_COUNT | T_CONTINUE
     deriving (Enum, Show, Eq)
