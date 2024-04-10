@@ -1,0 +1,9 @@
+READ      0x6099 # Read N1 from console to address 0x0099
+READ      0x6098 # Read N2 from console to address 0x0098
+LOAD      0x0099 # Load N1 to acc
+SUB       0x0098 # Subtract N2 from N1
+BNE       0x0008 # If N2 > N1, goto 0x0015
+WRITE     0x0099 # Write N1 to console
+BRANCH    0x0009 # Go to end
+WRITE     0x0098 # Write N2 to console
+HALT
