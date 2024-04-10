@@ -1,0 +1,25 @@
+{
+	"image": "simp",
+
+	"customizations": {
+		"vscode":{
+			"extensions":[
+				"haskell.haskell",
+				"ms-python.python",
+				"ms-vscode.cpptools",
+				"ms-vscode.makefile-tools",
+				"ms-vscode.cpptools-extension-pack",
+				"znck.grammarly"
+			],
+			"settings": {
+			}
+		}
+	},
+	"mounts":[
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached"
+	],
+	"containerEnv": {
+		"DISPLAY":":0"
+	},
+	"runArgs": ["--device=/dev/dri:/dev/dri", "--rm"]
+}
